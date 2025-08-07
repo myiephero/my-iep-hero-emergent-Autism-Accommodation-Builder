@@ -285,56 +285,47 @@ export const AutismProfileGenerator = ({ currentUser }) => {
     }))
   }
 
-  // Hero Plan: Document upload functionality
-  const handleDocumentUpload = async (event) => {
+  // Hero Plan protected functions
+  const requireHeroPlan = (action) => {
+    if (!isPremiumUser) {
+      setShowUpsellModal(true)
+      return false
+    }
+    return true
+  }
+
+  // Hero Plan: File Upload with protection
+  const handleFileUpload = (event) => {
+    if (!requireHeroPlan('file upload')) return
+    
     const files = Array.from(event.target.files)
     if (files.length === 0) return
 
     setIsUploadingDocument(true)
     
     try {
-      // For now, we'll simulate document upload and store file info locally
-      // In a real implementation, you'd upload to cloud storage
-      const uploadedFiles = await Promise.all(
-        files.map(async (file) => {
-          // Simulate upload delay
-          await new Promise(resolve => setTimeout(resolve, 1000))
-          
-          return {
-            id: Date.now() + Math.random(),
-            name: file.name,
-            size: file.size,
-            type: file.type,
-            uploadedAt: new Date().toISOString(),
-            // In real implementation, this would be the cloud storage URL
-            url: URL.createObjectURL(file),
-            content: await extractTextFromFile(file) // Extract text for AI analysis
-          }
-        })
-      )
-      
-      setUploadedDocuments(prev => [...prev, ...uploadedFiles])
-      setFormData(prev => ({
-        ...prev,
-        supplementalDocuments: [...prev.supplementalDocuments, ...uploadedFiles]
+      const newDocuments = files.map((file) => ({
+        id: Date.now() + Math.random(),
+        name: file.name,
+        size: file.size,
+        type: file.type,
+        uploadedAt: new Date().toISOString(),
+        content: `[${file.type}] ${file.name} content for AI analysis`
       }))
       
-      toast.success(`${uploadedFiles.length} document(s) uploaded successfully!`)
+      setUploadedDocuments(prev => [...prev, ...newDocuments])
+      setFormData(prev => ({
+        ...prev,
+        supplementalDocuments: [...prev.supplementalDocuments, ...newDocuments]
+      }))
+      
+      toast.success(`${newDocuments.length} document(s) uploaded successfully!`)
     } catch (error) {
       console.error('Upload failed:', error)
       toast.error('Failed to upload documents')
     } finally {
       setIsUploadingDocument(false)
     }
-  }
-
-  const extractTextFromFile = async (file) => {
-    // Simplified text extraction - in real implementation, use proper libraries
-    if (file.type.includes('text')) {
-      return await file.text()
-    }
-    // For PDF/Word documents, you'd use libraries like pdf-parse or mammoth
-    return `[Document content from ${file.name} - ${file.type}]`
   }
 
   const removeDocument = (documentId) => {
