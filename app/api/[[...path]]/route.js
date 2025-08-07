@@ -512,7 +512,248 @@ async function handleRoute(request, { params }) {
       }))
     }
 
-    // ===== EXISTING FUNCTIONALITY =====
+    // ===== BILLING & STRIPE INTEGRATION =====
+
+    // Create Stripe Checkout Session - POST /api/billing/create-checkout
+    if (route === '/billing/create-checkout' && method === 'POST') {
+      const { user, profile, error } = await withAuth(request)
+      if (error) {
+        return handleCORS(NextResponse.json({ error }, { status: 401 }))
+      }
+
+      const body = await request.json()
+      const { planType } = body
+
+      try {
+        const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY)
+        
+        const session = await stripe.checkout.sessions.create({
+          mode: 'subscription',
+          payment_method_types: ['card'],
+          line_items: [{
+            price: planType === 'hero' ? 'price_hero_plan_monthly' : 'price_basic_plan',
+            quantity: 1,
+          }],
+          success_url: `${process.env.NEXT_PUBLIC_BASE_URL}/settings?tab=billing&success=true`,
+          cancel_url: `${process.env.NEXT_PUBLIC_BASE_URL}/settings?tab=billing&cancelled=true`,
+          customer_email: user.email,
+          metadata: {
+            userId: user.id,
+            planType
+          }
+        })
+
+        // Log subscription attempt
+        await logUserEvent(user.id, 'subscription_attempt', { planType, sessionId: session.id })
+
+        return handleCORS(NextResponse.json({ url: session.url }))
+      } catch (error) {
+        console.error('Stripe checkout error:', error)
+        return handleCORS(NextResponse.json({ error: 'Failed to create checkout session' }, { status: 500 }))
+      }
+    }
+
+    // Stripe Customer Portal - POST /api/billing/portal
+    if (route === '/billing/portal' && method === 'POST') {
+      const { user, profile, error } = await withAuth(request)
+      if (error) {
+        return handleCORS(NextResponse.json({ error }, { status: 401 }))
+      }
+
+      try {
+        const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY)
+        
+        // Find customer by email
+        const customers = await stripe.customers.list({
+          email: user.email,
+          limit: 1
+        })
+
+        let customerId = null
+        if (customers.data.length > 0) {
+          customerId = customers.data[0].id
+        } else {
+          // Create customer if doesn't exist
+          const customer = await stripe.customers.create({
+            email: user.email,
+            metadata: { userId: user.id }
+          })
+          customerId = customer.id
+        }
+
+        const session = await stripe.billingPortal.sessions.create({
+          customer: customerId,
+          return_url: `${process.env.NEXT_PUBLIC_BASE_URL}/settings?tab=billing`,
+        })
+
+        return handleCORS(NextResponse.json({ url: session.url }))
+      } catch (error) {
+        console.error('Stripe portal error:', error)
+        return handleCORS(NextResponse.json({ error: 'Failed to create portal session' }, { status: 500 }))
+      }
+    }
+
+    // Get Billing History - GET /api/billing/history
+    if (route === '/billing/history' && method === 'GET') {
+      const { user, profile, error } = await withAuth(request)
+      if (error) {
+        return handleCORS(NextResponse.json({ error }, { status: 401 }))
+      }
+
+      try {
+        const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY)
+        
+        const customers = await stripe.customers.list({
+          email: user.email,
+          limit: 1
+        })
+
+        if (customers.data.length === 0) {
+          return handleCORS(NextResponse.json({ invoices: [] }))
+        }
+
+        const invoices = await stripe.invoices.list({
+          customer: customers.data[0].id,
+          limit: 10
+        })
+
+        return handleCORS(NextResponse.json({ invoices: invoices.data }))
+      } catch (error) {
+        console.error('Billing history error:', error)
+        return handleCORS(NextResponse.json({ error: 'Failed to fetch billing history' }, { status: 500 }))
+      }
+    }
+
+    // Cancel Subscription - POST /api/billing/cancel
+    if (route === '/billing/cancel' && method === 'POST') {
+      const { user, profile, error } = await withAuth(request)
+      if (error) {
+        return handleCORS(NextResponse.json({ error }, { status: 401 }))
+      }
+
+      try {
+        const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY)
+        
+        const customers = await stripe.customers.list({
+          email: user.email,
+          limit: 1
+        })
+
+        if (customers.data.length === 0) {
+          return handleCORS(NextResponse.json({ error: 'No subscription found' }, { status: 404 }))
+        }
+
+        const subscriptions = await stripe.subscriptions.list({
+          customer: customers.data[0].id,
+          status: 'active',
+          limit: 1
+        })
+
+        if (subscriptions.data.length === 0) {
+          return handleCORS(NextResponse.json({ error: 'No active subscription found' }, { status: 404 }))
+        }
+
+        await stripe.subscriptions.cancel(subscriptions.data[0].id)
+
+        // Update user plan in Supabase
+        await supabase
+          .from('user_profiles')
+          .update({ plan_type: 'free', updated_at: new Date().toISOString() })
+          .eq('id', user.id)
+
+        // Log cancellation
+        await logUserEvent(user.id, 'subscription_cancelled', { subscriptionId: subscriptions.data[0].id })
+
+        return handleCORS(NextResponse.json({ success: true }))
+      } catch (error) {
+        console.error('Cancel subscription error:', error)
+        return handleCORS(NextResponse.json({ error: 'Failed to cancel subscription' }, { status: 500 }))
+      }
+    }
+
+    // ===== PLAN ENFORCEMENT =====
+
+    // Check Plan Access - POST /api/auth/check-plan
+    if (route === '/auth/check-plan' && method === 'POST') {
+      const body = await request.json()
+      const { userId, requiredPlan, feature } = body
+
+      // Get user profile from Supabase
+      const { data: profile, error } = await supabase
+        .from('user_profiles')
+        .select('*')
+        .eq('id', userId)
+        .single()
+
+      if (error || !profile) {
+        return handleCORS(NextResponse.json({ hasAccess: false, error: 'User not found' }))
+      }
+
+      const hasAccess = profile.plan_type === requiredPlan || 
+                       profile.plan_type === 'hero' || 
+                       profile.role === 'advocate'
+
+      // Log access attempt
+      await logUserEvent(userId, 'plan_access_check', { 
+        feature, 
+        requiredPlan, 
+        userPlan: profile.plan_type,
+        hasAccess 
+      })
+
+      return handleCORS(NextResponse.json({ hasAccess, userPlan: profile.plan_type }))
+    }
+
+    // ===== LOGGING ENDPOINTS =====
+
+    // Plan Enforcement Logging - POST /api/logging/plan-enforcement
+    if (route === '/logging/plan-enforcement' && method === 'POST') {
+      const body = await request.json()
+      const { userId, feature, action } = body
+
+      await logUserEvent(userId, 'plan_enforcement', { feature, action })
+      return handleCORS(NextResponse.json({ success: true }))
+    }
+
+    // Hero Feature Usage Analytics - POST /api/analytics/hero-usage
+    if (route === '/analytics/hero-usage' && method === 'POST') {
+      const body = await request.json()
+      const { feature, userId } = body
+
+      await logUserEvent(userId, 'hero_feature_usage', { feature })
+      return handleCORS(NextResponse.json({ success: true }))
+    }
+
+    // Advocate Match Logging - POST /api/logging/advocate-match
+    if (route === '/logging/advocate-match' && method === 'POST') {
+      const body = await request.json()
+      const { parentId, advocateId, matchReason } = body
+
+      await logUserEvent(parentId, 'advocate_matched', { advocateId, matchReason })
+      await logUserEvent(advocateId, 'parent_assigned', { parentId, matchReason })
+      
+      // Trigger advocate notification email
+      await sendAdvocateMatchNotification(advocateId, parentId)
+
+      return handleCORS(NextResponse.json({ success: true }))
+    }
+
+    // User Signup Logging - POST /api/logging/signup
+    if (route === '/logging/signup' && method === 'POST') {
+      const body = await request.json()
+      const { userId, userEmail, role, planType } = body
+
+      await logUserEvent(userId, 'user_signup', { userEmail, role, planType })
+      
+      // Send welcome email based on plan type
+      if (planType === 'hero') {
+        await sendHeroPlanWelcomeEmail(userEmail, userId)
+      } else {
+        await sendWelcomeEmail(userEmail, userId)
+      }
+
+      return handleCORS(NextResponse.json({ success: true }))
+    }
 
     // Generate Accommodations - POST /api/accommodations/generate
     if (route === '/accommodations/generate' && method === 'POST') {
