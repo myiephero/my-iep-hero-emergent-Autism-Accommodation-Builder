@@ -954,8 +954,149 @@ export const AutismProfileGenerator = ({ currentUser }) => {
               </div>
             )}
 
-            {/* Step 5: Generated Profile */}
-            {currentStep === 5 && (
+            {/* Step 5: Hero Plan Enhanced Details */}
+            {currentStep === 5 && isPremiumUser && (
+              <div className="space-y-6">
+                {/* Premium Badge */}
+                <Alert className="border-orange-200 bg-orange-50">
+                  <Crown className="h-4 w-4 text-orange-600" />
+                  <AlertDescription className="text-orange-800">
+                    <strong>Hero Plan Enhancement:</strong> Add supplemental documents and additional insights to create a comprehensive 5-6 paragraph profile with detailed recommendations.
+                  </AlertDescription>
+                </Alert>
+
+                {/* Document Upload Section */}
+                <Card className="border-2 border-dashed border-orange-200 bg-orange-50/20">
+                  <CardHeader>
+                    <CardTitle className="flex items-center space-x-2 text-orange-800">
+                      <Upload className="w-5 h-5" />
+                      <span>Supplemental Documents</span>
+                    </CardTitle>
+                    <CardDescription className="text-orange-700">
+                      Upload IEPs, evaluations, or other documents to enhance the AI analysis
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="space-y-4">
+                      <div>
+                        <input
+                          type="file"
+                          multiple
+                          accept=".pdf,.doc,.docx,.txt"
+                          onChange={handleDocumentUpload}
+                          className="hidden"
+                          id="document-upload"
+                          disabled={isUploadingDocument}
+                        />
+                        <label
+                          htmlFor="document-upload"
+                          className={`
+                            flex items-center justify-center w-full p-6 border-2 border-dashed border-orange-300 
+                            rounded-lg cursor-pointer hover:bg-orange-50 transition-colors
+                            ${isUploadingDocument ? 'opacity-50 cursor-not-allowed' : ''}
+                          `}
+                        >
+                          {isUploadingDocument ? (
+                            <>
+                              <Loader2 className="w-6 h-6 mr-3 animate-spin text-orange-600" />
+                              <span className="text-orange-700">Uploading...</span>
+                            </>
+                          ) : (
+                            <>
+                              <Upload className="w-6 h-6 mr-3 text-orange-600" />
+                              <span className="text-orange-700">Click to upload documents or drag and drop</span>
+                            </>
+                          )}
+                        </label>
+                      </div>
+
+                      {uploadedDocuments.length > 0 && (
+                        <div className="space-y-2">
+                          <Label className="text-sm font-medium text-orange-800">Uploaded Documents:</Label>
+                          {uploadedDocuments.map((doc) => (
+                            <div key={doc.id} className="flex items-center justify-between p-3 bg-white border border-orange-200 rounded-lg">
+                              <div className="flex items-center space-x-3">
+                                <FileText className="w-4 h-4 text-orange-600" />
+                                <div>
+                                  <p className="text-sm font-medium text-gray-900">{doc.name}</p>
+                                  <p className="text-xs text-gray-500">{(doc.size / 1024).toFixed(1)} KB</p>
+                                </div>
+                              </div>
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => removeDocument(doc.id)}
+                                className="text-red-600 hover:text-red-700"
+                              >
+                                <X className="w-4 h-4" />
+                              </Button>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  </CardContent>
+                </Card>
+
+                {/* Enhanced Details Fields */}
+                <div className="grid gap-6">
+                  <div>
+                    <Label htmlFor="individual-strengths" className="text-base font-medium flex items-center space-x-2">
+                      <Star className="w-4 h-4 text-yellow-500" />
+                      <span>Individual Strengths & Interests</span>
+                    </Label>
+                    <Textarea
+                      id="individual-strengths"
+                      value={formData.individualStrengths}
+                      onChange={(e) => setFormData(prev => ({ ...prev, individualStrengths: e.target.value }))}
+                      placeholder="What are this student's unique strengths, talents, and special interests? How can these be leveraged in their education?"
+                      className="mt-2"
+                      rows={3}
+                    />
+                  </div>
+
+                  <div>
+                    <Label htmlFor="learning-style" className="text-base font-medium flex items-center space-x-2">
+                      <Brain className="w-4 h-4 text-blue-500" />
+                      <span>Learning Style & Preferences</span>
+                    </Label>
+                    <Textarea
+                      id="learning-style"
+                      value={formData.learningStyle}
+                      onChange={(e) => setFormData(prev => ({ ...prev, learningStyle: e.target.value }))}
+                      placeholder="How does this student learn best? Visual, hands-on, structured, with breaks, specific teaching methods that work well..."
+                      className="mt-2"
+                      rows={3}
+                    />
+                  </div>
+
+                  <div>
+                    <Label htmlFor="environmental-preferences" className="text-base font-medium flex items-center space-x-2">
+                      <Home className="w-4 h-4 text-green-500" />
+                      <span>Environmental Preferences</span>
+                    </Label>
+                    <Textarea
+                      id="environmental-preferences"
+                      value={formData.environmentalPreferences}
+                      onChange={(e) => setFormData(prev => ({ ...prev, environmentalPreferences: e.target.value }))}
+                      placeholder="What classroom environments help this student thrive? Lighting, seating, noise levels, organization, visual supports..."
+                      className="mt-2"
+                      rows={3}
+                    />
+                  </div>
+                </div>
+
+                <Alert className="border-blue-200 bg-blue-50">
+                  <Lightbulb className="h-4 w-4 text-blue-600" />
+                  <AlertDescription className="text-blue-800">
+                    <strong>Enhanced Generation:</strong> This additional information will help create a more comprehensive 5-6 paragraph profile with specific classroom recommendations and implementation strategies.
+                  </AlertDescription>
+                </Alert>
+              </div>
+            )}
+
+            {/* Step 6 (or 5 for free users): Generated Profile */}
+            {((currentStep === 6 && isPremiumUser) || (currentStep === 5 && !isPremiumUser)) && (
               <div className="space-y-6">
                 {isGenerating ? (
                   <div className="text-center py-12">
