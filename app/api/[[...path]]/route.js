@@ -988,8 +988,14 @@ async function handleRoute(request, { params }) {
 
     // Generate Accommodations - POST /api/accommodations/generate
     if (route === '/accommodations/generate' && method === 'POST') {
+      const { user, profile, error } = await withAuth(request)
+      if (error) {
+        return handleCORS(NextResponse.json({ error }, { status: 401 }))
+      }
+
       const body = await request.json()
       const {
+        studentId, // New: reference to student record
         childName,
         gradeLevel,
         diagnosisAreas,
@@ -997,41 +1003,89 @@ async function handleRoute(request, { params }) {
         behavioralChallenges,
         communicationMethod,
         additionalInfo,
-        planType = 'free',
-        userId,
-        selectedParentId
+        selectedParentId // For advocates working on behalf of parents
       } = body
 
-      if (!childName || !gradeLevel || !diagnosisAreas?.length || !communicationMethod) {
+      if (!studentId && (!childName || !gradeLevel || !diagnosisAreas?.length || !communicationMethod)) {
         return handleCORS(NextResponse.json(
-          { error: "Missing required fields" }, 
+          { error: "Student ID or complete child information is required" }, 
           { status: 400 }
         ))
       }
 
-      let actualUser = mockUsers[userId] || mockUsers['parent_sarah']
-      let actualPlanType = planType
+      let actualUser = profile
+      let actualPlanType = profile.plan_type
+      let studentData = null
 
-      if (selectedParentId && actualUser.role === 'advocate') {
-        const parentUser = mockUsers[selectedParentId]
-        if (parentUser) {
-          actualPlanType = parentUser.planType
+      // If studentId is provided, fetch student data
+      if (studentId) {
+        const { data: student, error: studentError } = await supabase
+          .from('students')
+          .select('*')
+          .eq('id', studentId)
+          .single()
+
+        if (studentError || !student) {
+          return handleCORS(NextResponse.json({ error: "Student not found" }, { status: 404 }))
         }
+
+        studentData = student
+
+        // Verify access to this student
+        if (profile.role === 'parent' && student.parent_id !== user.id) {
+          return handleCORS(NextResponse.json({ error: "Access denied to this student" }, { status: 403 }))
+        }
+
+        if (profile.role === 'advocate') {
+          const { data: assignment } = await supabase
+            .from('student_advocate_assignments')
+            .select('id')
+            .eq('student_id', studentId)
+            .eq('advocate_id', user.id)
+            .eq('is_active', true)
+            .single()
+
+          if (!assignment) {
+            return handleCORS(NextResponse.json({ error: "Access denied to this student" }, { status: 403 }))
+          }
+
+          // Get parent's plan type for advocates
+          const { data: parent } = await supabase
+            .from('user_profiles')
+            .select('plan_type')
+            .eq('id', student.parent_id)
+            .single()
+          
+          if (parent) {
+            actualPlanType = parent.plan_type
+          }
+        }
+      }
+
+      // Use student data if available, otherwise use provided data
+      const accommodationData = {
+        childName: studentData?.name || childName,
+        gradeLevel: studentData?.grade_level || gradeLevel,
+        diagnosisAreas: studentData?.diagnosis_areas || diagnosisAreas,
+        sensoryPreferences: studentData?.sensory_preferences || sensoryPreferences,
+        behavioralChallenges: studentData?.behavioral_challenges || behavioralChallenges,
+        communicationMethod: studentData?.communication_method || communicationMethod,
+        additionalInfo: studentData?.additional_notes || additionalInfo
       }
 
       // Enhanced prompt for Hero users
       const accommodationCount = actualPlanType === 'hero' ? 15 : 8
-      const modelToUse = actualPlanType === 'hero' ? "gpt-4o" : "gpt-4o"
+      const modelToUse = "gpt-4o"
       
       const prompt = `You are an expert IEP accommodation specialist. Create ${accommodationCount} personalized, specific, and implementable IEP accommodations for a child with the following profile:
 
-Child Name: ${childName}
-Grade Level: ${gradeLevel}
-Diagnosis Areas: ${diagnosisAreas.join(', ')}
-Sensory Preferences: ${sensoryPreferences.join(', ')}
-Behavioral Challenges: ${behavioralChallenges.join(', ')}
-Communication Method: ${communicationMethod}
-Additional Information: ${additionalInfo}
+Child Name: ${accommodationData.childName}
+Grade Level: ${accommodationData.gradeLevel}
+Diagnosis Areas: ${accommodationData.diagnosisAreas.join(', ')}
+Sensory Preferences: ${accommodationData.sensoryPreferences.join(', ')}
+Behavioral Challenges: ${accommodationData.behavioralChallenges.join(', ')}
+Communication Method: ${accommodationData.communicationMethod}
+Additional Information: ${accommodationData.additionalInfo}
 
 ${actualPlanType === 'hero' ? 'HERO PLAN: Provide enhanced, detailed accommodations with legal compliance considerations and implementation timelines.' : ''}
 
@@ -1093,38 +1147,43 @@ Focus on practical accommodations that address the specific challenges mentioned
           throw new Error('Invalid response format from AI')
         }
 
-        const sessionId = uuidv4()
-        const accommodationSession = {
-          id: sessionId,
-          childName,
-          gradeLevel,
-          diagnosisAreas,
-          sensoryPreferences,
-          behavioralChallenges,
-          communicationMethod,
-          additionalInfo,
-          planType: actualPlanType,
-          accommodations: accommodationsData.accommodations,
-          createdBy: userId,
-          forParent: selectedParentId || userId,
-          status: 'draft',
-          lastModified: new Date(),
-          timestamp: new Date(),
-          approvals: {
-            accommodationsApproved: false,
-            approvedBy: null,
-            approvedAt: null
-          }
-        }
+        // Save to accommodation_sessions with student reference
+        const { data: session, error: sessionError } = await supabase
+          .from('accommodation_sessions')
+          .insert([{
+            student_id: studentId,
+            child_name: accommodationData.childName,
+            grade_level: accommodationData.gradeLevel,
+            diagnosis_areas: accommodationData.diagnosisAreas,
+            sensory_preferences: accommodationData.sensoryPreferences,
+            behavioral_challenges: accommodationData.behavioralChallenges,
+            communication_method: accommodationData.communicationMethod,
+            additional_info: accommodationData.additionalInfo,
+            plan_type: actualPlanType,
+            accommodations: accommodationsData.accommodations,
+            created_by: user.id,
+            for_parent: studentData?.parent_id || user.id
+          }])
+          .select()
+          .single()
 
-        await db.collection('accommodation_sessions').insertOne(accommodationSession)
+        if (sessionError) throw sessionError
+
+        // Log accommodation generation
+        await logUserEvent(user.id, 'accommodations_generated', {
+          studentId,
+          studentName: accommodationData.childName,
+          accommodationCount: accommodationsData.accommodations.length,
+          planType: actualPlanType
+        })
 
         return handleCORS(NextResponse.json({
-          sessionId,
+          sessionId: session.id,
           ...accommodationsData,
-          createdBy: actualUser.name,
-          createdByRole: actualUser.role,
-          planType: actualPlanType
+          createdBy: profile.first_name + ' ' + profile.last_name,
+          createdByRole: profile.role,
+          planType: actualPlanType,
+          studentId
         }))
 
       } catch (openaiError) {
