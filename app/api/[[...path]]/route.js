@@ -2,6 +2,7 @@ import { MongoClient } from 'mongodb'
 import { v4 as uuidv4 } from 'uuid'
 import { NextResponse } from 'next/server'
 import OpenAI from 'openai'
+import { createClient } from '@supabase/supabase-js'
 
 // MongoDB connection
 let client
@@ -16,10 +17,51 @@ async function connectToMongo() {
   return db
 }
 
+// Supabase client for server-side operations
+const supabase = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL,
+  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+)
+
 // OpenAI connection
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
 })
+
+// Auth middleware
+const withAuth = async (request) => {
+  const authHeader = request.headers.get('authorization')
+  
+  if (!authHeader || !authHeader.startsWith('Bearer ')) {
+    return { user: null, profile: null, error: 'No authorization token provided' }
+  }
+
+  const token = authHeader.split(' ')[1]
+
+  try {
+    const { data: { user }, error: userError } = await supabase.auth.getUser(token)
+    
+    if (userError || !user) {
+      return { user: null, profile: null, error: 'Invalid token' }
+    }
+
+    // Get user profile from Supabase
+    const { data: profile, error: profileError } = await supabase
+      .from('user_profiles')
+      .select('*')
+      .eq('id', user.id)
+      .single()
+
+    if (profileError || !profile) {
+      return { user, profile: null, error: 'Profile not found' }
+    }
+
+    return { user, profile, error: null }
+  } catch (error) {
+    console.error('Auth error:', error)
+    return { user: null, profile: null, error: 'Authentication failed' }
+  }
+}
 
 // Helper function to handle CORS
 function handleCORS(response) {
