@@ -219,10 +219,9 @@ metadata:
 
 test_plan:
   current_focus:
-    - "OpenAI GPT-4o Integration for Accommodation Generation"
-    - "Multi-Step Questionnaire UI"
     - "AI-Generated Accommodations Display"
-  stuck_tasks: []
+  stuck_tasks:
+    - "AI-Generated Accommodations Display"
   test_all: false
   test_priority: "high_first"
 
@@ -231,3 +230,5 @@ agent_communication:
     message: "Implemented complete Autism Accommodation Builder MVP with OpenAI GPT-4o integration, 4-step questionnaire, MongoDB storage, and responsive UI with My IEP Hero branding. Key features include AI-generated accommodations, copy/export functionality, and upsell banner. Ready for backend testing to verify OpenAI API integration works correctly."
   - agent: "testing"
     message: "BACKEND TESTING COMPLETE - All critical backend functionality PASSED! ✅ OpenAI GPT-4o integration working perfectly (fixed JSON parsing issue), ✅ MongoDB storage operational, ✅ API validation working, ✅ Accommodation history API functional. Fixed minor JSON parsing issue in OpenAI response handling. Free plan generates 8 accommodations, hero plan generates 15 as expected. All APIs tested with realistic autism profile data. Backend is fully functional and ready for production."
+  - agent: "testing"
+    message: "FRONTEND TESTING COMPLETE - Most frontend functionality PASSED! ✅ Multi-step questionnaire UI working perfectly with all 4 steps, form validation, and navigation. ✅ Mock parent authentication displays correctly. ✅ Responsive design works on mobile. ✅ My IEP Hero branding and UI elements properly styled. ❌ CRITICAL ISSUE: AI generation fails with 502 error due to Kubernetes ingress routing problem - backend API works locally but not via preview URL. This prevents testing of results page, copy/export functionality, and upsell banner. RECOMMENDATION: Fix API routing configuration to resolve 502 errors on /api/* endpoints."
