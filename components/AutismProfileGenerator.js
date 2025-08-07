@@ -41,7 +41,18 @@ import {
   TrendingUp,
   AlertCircle,
   Lock,
-  Zap
+  Zap,
+  Eye,
+  Heart,
+  Shield,
+  Calendar,
+  BookOpen,
+  Mic,
+  Volume2,
+  Settings,
+  PlusCircle,
+  MinusCircle,
+  ExternalLink
 } from 'lucide-react'
 import { toast } from 'sonner'
 
