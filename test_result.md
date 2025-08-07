@@ -102,7 +102,7 @@
 # Testing Data - Main Agent and testing sub agent both should log testing data below this section
 #====================================================================================================
 
-user_problem_statement: "Build Autism Accommodation Builder MVP - AI-powered tool to generate personalized IEP accommodations based on child's autism profile"
+user_problem_statement: "Build Autism Accommodation Builder MVP - AI-powered tool to generate personalized IEP accommodations based on child's autism profile. EXTENDED: Add Hero Plan exclusive features to Autism Profile Generator including enhanced 5-6 paragraph profiles, document upload, What Helps/What Hurts charts, Profile Insights Panel, and advanced export options."
 
 backend:
   - task: "OpenAI GPT-4o Integration for Accommodation Generation"
@@ -149,6 +149,66 @@ backend:
       - working: true
         agent: "testing"
         comment: "PASSED - History API endpoint working correctly. Returns properly formatted accommodation records with all required fields, sorted by timestamp, with MongoDB _id field properly removed from responses."
+
+  - task: "Autism Profile Generator API - Basic Generation"
+    implemented: true
+    working: "unknown"
+    file: "/app/app/api/[[...path]]/route.js"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: true
+    status_history:
+      - working: "unknown"
+        agent: "main"
+        comment: "Implemented POST /api/autism-profiles/generate endpoint with OpenAI GPT-4o integration for generating 2-3 paragraph autism profiles. Includes role-based access control and student verification."
+
+  - task: "Hero Plan Enhanced Profile Generation"
+    implemented: true
+    working: "unknown"
+    file: "/app/app/api/[[...path]]/route.js"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: true
+    status_history:
+      - working: "unknown"
+        agent: "main"
+        comment: "Enhanced API to generate 5-6 paragraph profiles for Hero Plan users with additional sections: Individual Strengths, Learning Style, Environmental Preferences, Long-term Outlook. Includes document analysis integration."
+
+  - task: "Hero Plan Insights Generation"
+    implemented: true
+    working: "unknown"
+    file: "/app/app/api/[[...path]]/route.js"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: true
+    status_history:
+      - working: "unknown"
+        agent: "main"
+        comment: "Implemented secondary AI call to generate Profile Insights Panel with Top 3 Needs, Top 3 Recommendations, Potential Red Flags, plus What Helps/What Hurts chart data (helpful supports, situations to avoid, classroom tips)."
+
+  - task: "Document Upload Processing"
+    implemented: true
+    working: "unknown"
+    file: "/app/app/api/[[...path]]/route.js"
+    stuck_count: 0
+    priority: "medium"
+    needs_retesting: true
+    status_history:
+      - working: "unknown"
+        agent: "main"
+        comment: "API accepts supplemental documents array in request body and integrates document insights into Hero Plan profile generation prompts."
+
+  - task: "Autism Profile CRUD Operations"
+    implemented: true
+    working: "unknown"
+    file: "/app/app/api/[[...path]]/route.js"
+    stuck_count: 0
+    priority: "medium"
+    needs_retesting: true
+    status_history:
+      - working: "unknown"
+        agent: "main"
+        comment: "Implemented GET /api/autism-profiles, GET /api/autism-profiles/:id, POST /api/autism-profiles/:id/share endpoints with role-based access control and Supabase storage."
 
 frontend:
   - task: "Multi-Step Questionnaire UI"
