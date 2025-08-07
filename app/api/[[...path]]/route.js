@@ -758,10 +758,10 @@ Respond with ONLY valid JSON in this exact format:
             profile_type: profileType,
             // Hero Plan exclusive data
             ...(profileType === 'hero' && {
-              individual_strengths: formData.individualStrengths || '',
-              learning_style: formData.learningStyle || '', 
-              environmental_preferences: formData.environmentalPreferences || '',
-              supplemental_documents: formData.supplementalDocuments || [],
+              individual_strengths: individualStrengths || '',
+              learning_style: learningStyle || '', 
+              environmental_preferences: environmentalPreferences || '',
+              supplemental_documents: supplementalDocuments || [],
               profile_insights: profileInsights,
               helpful_supports: helpfulSupports,
               situations_to_avoid: situationsToAvoid,
