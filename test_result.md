@@ -271,6 +271,90 @@ frontend:
         agent: "testing"
         comment: "CANNOT TEST - Upsell banner implementation exists in code and should display on results page for free plan users, but cannot be tested because AI generation fails due to 502 API routing error. Banner code looks correct and should work once API routing is fixed."
 
+  - task: "Autism Profile Generator UI"
+    implemented: true
+    working: "unknown"
+    file: "/app/components/AutismProfileGenerator.js"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: true
+    status_history:
+      - working: "unknown"
+        agent: "main"
+        comment: "Built complete 6-step wizard for Autism Profile Generator: Student Selection, Sensory Preferences, Communication Style, Behavioral Triggers, Home/Goals, Generated Profile. Includes integration with StudentSelector component."
+
+  - task: "Hero Plan Feature Gating UI"
+    implemented: true
+    working: "unknown"
+    file: "/app/components/AutismProfileGenerator.js"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: true
+    status_history:
+      - working: "unknown"
+        agent: "main"
+        comment: "Implemented plan-based feature gating with upgrade prompts for free users. Hero users get additional Enhanced Details step with document upload, individual strengths, learning style, and environmental preferences fields."
+
+  - task: "Hero Plan Document Upload"
+    implemented: true
+    working: "unknown"
+    file: "/app/components/AutismProfileGenerator.js"
+    stuck_count: 0
+    priority: "medium"
+    needs_retesting: true
+    status_history:
+      - working: "unknown"
+        agent: "main"
+        comment: "Added file upload interface for Hero Plan users to attach supplemental documents (IEPs, evaluations). Includes drag-drop interface, file preview, and document removal functionality with text extraction simulation."
+
+  - task: "Profile Insights Panel UI"
+    implemented: true
+    working: "unknown"
+    file: "/app/components/AutismProfileGenerator.js"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: true
+    status_history:
+      - working: "unknown"
+        agent: "main"
+        comment: "Built Hero Plan exclusive Profile Insights Panel displaying Top 3 Needs, Top 3 Recommendations, and Potential Red Flags in a visually appealing 3-column grid layout with color-coded sections."
+
+  - task: "What Helps vs What Hurts Chart"
+    implemented: true
+    working: "unknown"
+    file: "/app/components/AutismProfileGenerator.js"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: true
+    status_history:
+      - working: "unknown"
+        agent: "main"
+        comment: "Created Hero Plan exclusive visual chart with 3 sections: Supports That Help (green), Situations to Avoid (red), and Classroom Tips (yellow). Uses icons and color coding for easy reference by educators."
+
+  - task: "Enhanced Export Options"
+    implemented: true
+    working: "unknown"
+    file: "/app/components/AutismProfileGenerator.js"
+    stuck_count: 0
+    priority: "medium"
+    needs_retesting: true
+    status_history:
+      - working: "unknown"
+        agent: "main"
+        comment: "Added Hero Plan exclusive export options: Enhanced PDF with insights and charts, DOCX export (simulated), and Save to Student Vault functionality. Free users get basic PDF export with upgrade prompts."
+
+  - task: "Feature Navigation Integration"
+    implemented: true
+    working: "unknown"
+    file: "/app/app/page.js"
+    stuck_count: 0
+    priority: "medium"
+    needs_retesting: true
+    status_history:
+      - working: "unknown"
+        agent: "main"
+        comment: "Integrated Autism Profile Generator as second feature in main app with navigation tabs. Users can switch between Accommodation Builder and Profile Generator while maintaining authentication state."
+
 metadata:
   created_by: "main_agent"
   version: "1.0"
