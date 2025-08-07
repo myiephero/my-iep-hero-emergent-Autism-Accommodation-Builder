@@ -165,9 +165,20 @@ Focus on practical accommodations that address the specific challenges mentioned
         let accommodationsData
 
         try {
-          accommodationsData = JSON.parse(response)
+          // Clean the response to handle potential formatting issues
+          let cleanedResponse = response.trim()
+          
+          // Remove any markdown code block formatting if present
+          if (cleanedResponse.startsWith('```json')) {
+            cleanedResponse = cleanedResponse.replace(/^```json\s*/, '').replace(/\s*```$/, '')
+          } else if (cleanedResponse.startsWith('```')) {
+            cleanedResponse = cleanedResponse.replace(/^```\s*/, '').replace(/\s*```$/, '')
+          }
+          
+          accommodationsData = JSON.parse(cleanedResponse)
         } catch (parseError) {
           console.error('Failed to parse OpenAI response:', parseError)
+          console.error('Raw response:', response)
           throw new Error('Invalid response format from AI')
         }
 
