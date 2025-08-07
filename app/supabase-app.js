@@ -431,7 +431,7 @@ const MainApp = () => {
   const canProceed = () => {
     switch (currentStep) {
       case 0:
-        return formData.childName && formData.gradeLevel
+        return (selectedStudent || (formData.childName && formData.gradeLevel))
       case 1:
         return formData.diagnosisAreas.length > 0
       case 2:
