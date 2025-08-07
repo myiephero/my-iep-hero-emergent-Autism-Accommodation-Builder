@@ -1346,6 +1346,68 @@ export const AutismProfileGenerator = ({ currentUser }) => {
                       </Card>
                     )}
 
+                    {/* Hero Plan: Top Needs & Recommendations (Enhanced Section) */}
+                    {isPremiumUser && topNeeds.length > 0 && (
+                      <Card className="border-2 border-indigo-200 bg-gradient-to-r from-indigo-50 to-blue-50">
+                        <CardHeader>
+                          <CardTitle className="flex items-center space-x-2 text-indigo-800">
+                            <Star className="w-5 h-5" />
+                            <span>Top Needs & Recommendations</span>
+                            <Badge className="bg-indigo-200 text-indigo-800">Hero Plan - Max 8 Items</Badge>
+                          </CardTitle>
+                          <CardDescription className="text-indigo-700">
+                            Priority actions for parents and educators
+                          </CardDescription>
+                        </CardHeader>
+                        <CardContent>
+                          <div className="grid md:grid-cols-2 gap-6">
+                            <div className="space-y-4">
+                              <h4 className="font-semibold text-indigo-900 flex items-center">
+                                <Heart className="w-4 h-4 mr-2 text-red-500" />
+                                Most Critical Needs
+                              </h4>
+                              <div className="space-y-3">
+                                {topNeeds.slice(0, 4).map((need, index) => (
+                                  <div key={index} className="bg-white p-3 rounded-lg border-l-4 border-red-400">
+                                    <div className="flex items-start space-x-3">
+                                      <span className="bg-red-100 text-red-800 text-xs font-medium px-2 py-1 rounded-full">
+                                        {index + 1}
+                                      </span>
+                                      <p className="text-sm text-gray-800 leading-relaxed">{need}</p>
+                                    </div>
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+
+                            <div className="space-y-4">
+                              <h4 className="font-semibold text-indigo-900 flex items-center">
+                                <Lightbulb className="w-4 h-4 mr-2 text-yellow-500" />
+                                Key Recommendations
+                              </h4>
+                              <div className="space-y-3">
+                                {(profileInsights?.topRecommendations || [
+                                  'Implement visual schedule system',
+                                  'Create calm-down space in classroom',
+                                  'Use clear, concrete language',
+                                  'Provide sensory breaks every 30 minutes'
+                                ]).slice(0, 4).map((rec, index) => (
+                                  <div key={index} className="bg-white p-3 rounded-lg border-l-4 border-green-400">
+                                    <div className="flex items-start space-x-3">
+                                      <span className="bg-green-100 text-green-800 text-xs font-medium px-2 py-1 rounded-full">
+                                        {index + 1}
+                                      </span>
+                                      <p className="text-sm text-gray-800 leading-relaxed">{rec}</p>
+                                    </div>
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    )}
+
                     {/* Hero Plan: What Helps / What Hurts Chart */}
                     {isPremiumUser && (helpfulSupports.length > 0 || situationsToAvoid.length > 0 || classroomTips.length > 0) && (
                       <Card className="border-2 border-blue-200 bg-gradient-to-r from-blue-50 to-purple-50">
