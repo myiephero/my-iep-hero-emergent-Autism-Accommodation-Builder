@@ -750,7 +750,18 @@ Respond with ONLY valid JSON in this exact format:
             home_supports: homeSupports,
             goals: goals,
             generated_profile: generatedProfile,
-            profile_type: profileType
+            profile_type: profileType,
+            // Hero Plan exclusive data
+            ...(profileType === 'hero' && {
+              individual_strengths: formData.individualStrengths || '',
+              learning_style: formData.learningStyle || '', 
+              environmental_preferences: formData.environmentalPreferences || '',
+              supplemental_documents: formData.supplementalDocuments || [],
+              profile_insights: profileInsights,
+              helpful_supports: helpfulSupports,
+              situations_to_avoid: situationsToAvoid,
+              classroom_tips: classroomTips
+            })
           }])
           .select()
           .single()
@@ -762,16 +773,28 @@ Respond with ONLY valid JSON in this exact format:
           studentId,
           studentName: student.name,
           profileType,
-          profileLength: generatedProfile.length
+          profileLength: generatedProfile.length,
+          hasSupplementalDocs: profileType === 'hero' && (formData.supplementalDocuments?.length > 0),
+          insightsGenerated: profileType === 'hero' && profileInsights !== null
         })
 
-        return handleCORS(NextResponse.json({
+        const response = {
           profileId: autismProfile.id,
           generatedProfile,
           profileType,
           studentName: student.name,
           createdBy: profile.first_name + ' ' + profile.last_name
-        }))
+        }
+
+        // Add Hero Plan exclusive data to response
+        if (profileType === 'hero') {
+          response.profileInsights = profileInsights
+          response.helpfulSupports = helpfulSupports
+          response.situationsToAvoid = situationsToAvoid
+          response.classroomTips = classroomTips
+        }
+
+        return handleCORS(NextResponse.json(response))
 
       } catch (error) {
         console.error('Autism Profile Generation Error:', error)
