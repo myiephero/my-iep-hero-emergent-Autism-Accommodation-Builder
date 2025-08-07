@@ -209,6 +209,12 @@ export const AutismProfileGenerator = ({ currentUser }) => {
   const [situationsToAvoid, setSituationsToAvoid] = useState([])
   const [classroomTips, setClassroomTips] = useState([])
   const [isUploadingDocument, setIsUploadingDocument] = useState(false)
+  const [showUpsellModal, setShowUpsellModal] = useState(false)
+  const [topNeeds, setTopNeeds] = useState([])
+  const [structuredProfile, setStructuredProfile] = useState(null)
+
+  // Check if user has Hero Plan
+  const isPremiumUser = profile?.plan_type === 'hero' || profile?.role === 'advocate'
 
   const steps = [
     { title: "Select Student", icon: User, description: "Choose which student to create a profile for" },
