@@ -16,6 +16,7 @@ import { Alert, AlertDescription } from '@/components/ui/alert'
 import { CheckCircle, Copy, Download, Star, ArrowRight, ArrowLeft, Loader2, Heart, Brain, Users, BookOpen, MessageSquare, Shield, Settings, User, UserCheck, Crown, Lock, Zap, LogOut } from 'lucide-react'
 import { toast } from 'sonner'
 import { AdvancedAIReview, AdvocateRecommendations, DocumentVault, TeamCollaboration, HeroPlanGate } from '@/components/HeroPlanFeatures'
+import { StudentSelector, StudentQuickActions } from '@/components/StudentSelector'
 
 const MainApp = () => {
   const { user, profile, signOut } = useAuth()
