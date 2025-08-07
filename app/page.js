@@ -536,8 +536,17 @@ const App = () => {
       </div>
 
       <div className="container mx-auto px-4 py-8 max-w-4xl">
-        {/* Sessions Dashboard */}
-        {sessions.length > 0 && (
+        {/* Conditional Feature Rendering */}
+        {activeFeature === 'profile' ? (
+          <div className="mt-[-2rem]">
+            <AuthProvider>
+              <AutismProfileGenerator />
+            </AuthProvider>
+          </div>
+        ) : (
+          <>
+            {/* Sessions Dashboard */}
+            {sessions.length > 0 && (
           <Card className="mb-6">
             <CardHeader>
               <CardTitle className="flex items-center space-x-2">
