@@ -1107,7 +1107,7 @@ export const AutismProfileGenerator = ({ currentUser }) => {
                           type="file"
                           multiple
                           accept=".pdf,.doc,.docx,.txt"
-                          onChange={handleDocumentUpload}
+                          onChange={handleFileUpload}
                           className="hidden"
                           id="document-upload"
                           disabled={isUploadingDocument}
