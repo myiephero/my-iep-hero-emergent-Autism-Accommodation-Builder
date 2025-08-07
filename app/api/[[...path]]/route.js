@@ -632,10 +632,10 @@ ENHANCED HERO PROFILE SECTIONS (additional):
 
 10. LONG-TERM DEVELOPMENTAL OUTLOOK (Future planning and transition considerations)
 
-${formData.supplementalDocuments?.length > 0 ? `
+${supplementalDocuments?.length > 0 ? `
 
 DOCUMENT INSIGHTS: The following information has been gathered from uploaded documents:
-${formData.supplementalDocuments.map(doc => `- ${doc.name}: ${doc.content.substring(0, 200)}...`).join('\n')}
+${supplementalDocuments.map(doc => `- ${doc.name}: ${doc.content.substring(0, 200)}...`).join('\n')}
 Please integrate these insights into the profile where relevant.
 ` : ''}
 
