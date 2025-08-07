@@ -315,6 +315,71 @@ export const AutismProfileGenerator = ({ currentUser }) => {
     try {
       const printWindow = window.open('', '_blank')
       
+      // Enhanced PDF content for Hero Plan users
+      const insightsSection = isPremiumUser && profileInsights ? `
+        <div class="insights-section">
+          <h2>🎯 Profile Insights</h2>
+          <div class="insights-grid">
+            <div class="insight-box">
+              <h3>Top 3 Needs</h3>
+              <ul>
+                ${profileInsights.topNeeds?.map(need => `<li>${need}</li>`).join('') || '<li>General autism support</li>'}
+              </ul>
+            </div>
+            <div class="insight-box">
+              <h3>Top 3 Recommendations</h3>
+              <ul>
+                ${profileInsights.topRecommendations?.map(rec => `<li>${rec}</li>`).join('') || '<li>Structured environment</li>'}
+              </ul>
+            </div>
+            <div class="insight-box alert">
+              <h3>⚠️ Potential Red Flags</h3>
+              <ul>
+                ${profileInsights.redFlags?.map(flag => `<li>${flag}</li>`).join('') || '<li>Overstimulation</li>'}
+              </ul>
+            </div>
+          </div>
+        </div>
+
+        <div class="supports-chart">
+          <h2>📊 What Helps vs. What Hurts</h2>
+          <div class="chart-grid">
+            <div class="helps-section">
+              <h3>✅ Supports That Help</h3>
+              <ul>
+                ${helpfulSupports.map(support => `<li>${support}</li>`).join('')}
+              </ul>
+            </div>
+            <div class="hurts-section">
+              <h3>❌ Situations to Avoid</h3>
+              <ul>
+                ${situationsToAvoid.map(situation => `<li>${situation}</li>`).join('')}
+              </ul>
+            </div>
+            <div class="tips-section">
+              <h3>📌 Classroom Tips</h3>
+              <ul>
+                ${classroomTips.map(tip => `<li>${tip}</li>`).join('')}
+              </ul>
+            </div>
+          </div>
+        </div>
+      ` : ''
+
+      const documentsSection = isPremiumUser && uploadedDocuments.length > 0 ? `
+        <div class="documents-section">
+          <h2>📎 Referenced Documents</h2>
+          <ul class="document-list">
+            ${uploadedDocuments.map(doc => `
+              <li>
+                <strong>${doc.name}</strong> 
+                <span class="doc-meta">(${doc.type}, uploaded ${new Date(doc.uploadedAt).toLocaleDateString()})</span>
+              </li>
+            `).join('')}
+          </ul>
+        </div>
+      ` : ''
+      
       printWindow.document.write(`
         <html>
           <head>
@@ -331,6 +396,12 @@ export const AutismProfileGenerator = ({ currentUser }) => {
                 border-bottom: 3px solid #2563eb; 
                 padding-bottom: 10px; 
               }
+              h2 {
+                color: #16a34a;
+                margin-top: 30px;
+                border-left: 4px solid #16a34a;
+                padding-left: 15px;
+              }
               .header-info { 
                 background: #f8fafc; 
                 padding: 20px; 
@@ -345,6 +416,82 @@ export const AutismProfileGenerator = ({ currentUser }) => {
                 border-radius: 8px;
                 white-space: pre-line;
               }
+              .insights-section {
+                background: #fef3c7;
+                padding: 20px;
+                border-radius: 8px;
+                margin: 20px 0;
+              }
+              .insights-grid {
+                display: grid;
+                grid-template-columns: 1fr 1fr 1fr;
+                gap: 15px;
+                margin-top: 15px;
+              }
+              .insight-box {
+                background: white;
+                padding: 15px;
+                border-radius: 6px;
+                border: 1px solid #d1d5db;
+              }
+              .insight-box.alert {
+                border-color: #f59e0b;
+                background: #fffbeb;
+              }
+              .insight-box h3 {
+                margin-top: 0;
+                color: #374151;
+                font-size: 14px;
+              }
+              .insight-box ul {
+                margin: 10px 0 0 0;
+                padding-left: 20px;
+              }
+              .supports-chart {
+                background: #f0f9ff;
+                padding: 20px;
+                border-radius: 8px;
+                margin: 20px 0;
+              }
+              .chart-grid {
+                display: grid;
+                grid-template-columns: 1fr 1fr 1fr;
+                gap: 15px;
+                margin-top: 15px;
+              }
+              .helps-section, .hurts-section, .tips-section {
+                background: white;
+                padding: 15px;
+                border-radius: 6px;
+                border: 1px solid #d1d5db;
+              }
+              .helps-section {
+                border-left: 4px solid #10b981;
+              }
+              .hurts-section {
+                border-left: 4px solid #ef4444;
+              }
+              .tips-section {
+                border-left: 4px solid #f59e0b;
+              }
+              .documents-section {
+                background: #f3f4f6;
+                padding: 20px;
+                border-radius: 8px;
+                margin: 20px 0;
+              }
+              .document-list {
+                list-style: none;
+                padding: 0;
+              }
+              .document-list li {
+                padding: 8px 0;
+                border-bottom: 1px solid #e5e7eb;
+              }
+              .doc-meta {
+                color: #6b7280;
+                font-size: 12px;
+              }
               .footer {
                 margin-top: 40px;
                 padding: 15px;
@@ -352,10 +499,22 @@ export const AutismProfileGenerator = ({ currentUser }) => {
                 border-radius: 8px;
                 font-size: 0.9em;
                 color: #666;
+                text-align: center;
+              }
+              .hero-badge {
+                background: linear-gradient(135deg, #f59e0b, #d97706);
+                color: white;
+                padding: 8px 16px;
+                border-radius: 20px;
+                font-size: 12px;
+                font-weight: bold;
+                display: inline-block;
+                margin-bottom: 10px;
               }
               @media print { 
                 body { margin: 20px; } 
                 .no-print { display: none; }
+                .insights-grid, .chart-grid { grid-template-columns: 1fr; }
               }
             </style>
           </head>
@@ -363,20 +522,28 @@ export const AutismProfileGenerator = ({ currentUser }) => {
             <h1>Autism Profile</h1>
             
             <div class="header-info">
+              ${isPremiumUser ? '<div class="hero-badge">👑 HERO PLAN - Enhanced Profile</div>' : ''}
               <h2>Student Information</h2>
               <p><strong>Name:</strong> ${selectedStudent.name}</p>
               <p><strong>Grade Level:</strong> ${selectedStudent.grade_level}</p>
               <p><strong>Profile Generated:</strong> ${new Date().toLocaleDateString()}</p>
               <p><strong>Created By:</strong> ${profile.first_name} ${profile.last_name} (${profile.role})</p>
+              <p><strong>Profile Type:</strong> ${isPremiumUser ? 'Hero Plan - Enhanced' : 'Standard'}</p>
             </div>
 
+            ${documentsSection}
+
             <div class="profile-content">
+              <h2>📋 Comprehensive Profile</h2>
               ${generatedProfile.replace(/\n/g, '<br>')}
             </div>
 
+            ${insightsSection}
+
             <div class="footer">
               <p><strong>Generated by My IEP Hero - Autism Profile Generator</strong></p>
-              <p>This profile is designed to help educators and support staff better understand and support ${selectedStudent.name}'s unique needs and strengths.</p>
+              <p>This ${isPremiumUser ? 'enhanced' : ''} profile is designed to help educators and support staff better understand and support ${selectedStudent.name}'s unique needs and strengths.</p>
+              ${isPremiumUser ? '<p>🏆 This is a Hero Plan enhanced profile with comprehensive insights and recommendations.</p>' : ''}
             </div>
           </body>
         </html>
@@ -389,10 +556,98 @@ export const AutismProfileGenerator = ({ currentUser }) => {
         printWindow.print()
       }, 100)
       
-      toast.success('Print dialog opened! Save as PDF from the print options.')
+      toast.success('Enhanced PDF opened! Save from the print options.')
     } catch (error) {
       console.error('Print error:', error)
       toast.error('Failed to open print dialog')
+    }
+  }
+
+  // Hero Plan: Export to DOCX
+  const exportToDocx = () => {
+    if (!isPremiumUser) {
+      toast.error('DOCX export is available for Hero Plan users')
+      return
+    }
+    
+    // Create a simple DOCX-like format (in real implementation, use docx library)
+    const docxContent = [
+      `AUTISM PROFILE - ${selectedStudent.name}`,
+      `Generated: ${new Date().toLocaleDateString()}`,
+      `Created by: ${profile.first_name} ${profile.last_name}`,
+      ``,
+      `COMPREHENSIVE PROFILE:`,
+      generatedProfile,
+      ``,
+      ...(profileInsights ? [
+        `TOP 3 NEEDS:`,
+        ...(profileInsights.topNeeds || []),
+        ``,
+        `TOP 3 RECOMMENDATIONS:`, 
+        ...(profileInsights.topRecommendations || []),
+        ``,
+        `POTENTIAL RED FLAGS:`,
+        ...(profileInsights.redFlags || []),
+        ``
+      ] : []),
+      `SUPPORTS THAT HELP:`,
+      ...helpfulSupports,
+      ``,
+      `SITUATIONS TO AVOID:`,
+      ...situationsToAvoid,
+      ``,
+      `CLASSROOM TIPS:`,
+      ...classroomTips
+    ].join('\n')
+    
+    // Create and download the file
+    const blob = new Blob([docxContent], { type: 'text/plain' })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = `${selectedStudent.name}-Autism-Profile.txt`
+    document.body.appendChild(a)
+    a.click()
+    document.body.removeChild(a)
+    URL.revokeObjectURL(url)
+    
+    toast.success('Profile exported as text file (DOCX functionality requires additional libraries)')
+  }
+
+  // Hero Plan: Save to Student Vault
+  const saveToVault = async () => {
+    if (!isPremiumUser) {
+      toast.error('Student Vault is available for Hero Plan users')
+      return
+    }
+    
+    try {
+      // In real implementation, this would save to the document vault API
+      const vaultEntry = {
+        id: profileId,
+        studentId: selectedStudent.id,
+        studentName: selectedStudent.name,
+        title: `Autism Profile - ${selectedStudent.name}`,
+        type: 'autism_profile',
+        content: generatedProfile,
+        insights: profileInsights,
+        supports: helpfulSupports,
+        avoid: situationsToAvoid,
+        tips: classroomTips,
+        documents: uploadedDocuments,
+        createdAt: new Date().toISOString(),
+        createdBy: profile.first_name + ' ' + profile.last_name
+      }
+      
+      // Save to localStorage for demo (in real app, use API)
+      const vault = JSON.parse(localStorage.getItem('hero_student_vault') || '[]')
+      vault.unshift(vaultEntry)
+      localStorage.setItem('hero_student_vault', JSON.stringify(vault))
+      
+      toast.success('Profile saved to Student Vault! 🏆')
+    } catch (error) {
+      console.error('Save to vault error:', error)
+      toast.error('Failed to save to vault')
     }
   }
 
