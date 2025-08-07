@@ -256,7 +256,18 @@ export const AutismProfileGenerator = ({ currentUser }) => {
           communicationStyle: formData.communicationStyle,
           behavioralTriggers: formData.behavioralTriggers,
           homeSupports: formData.homeSupports,
-          goals: formData.goals
+          goals: formData.goals,
+          // Hero Plan exclusive data
+          ...(isPremiumUser && {
+            individualStrengths: formData.individualStrengths,
+            learningStyle: formData.learningStyle,
+            environmentalPreferences: formData.environmentalPreferences,
+            supplementalDocuments: formData.supplementalDocuments.map(doc => ({
+              name: doc.name,
+              type: doc.type,
+              content: doc.content
+            }))
+          })
         })
       })
 
@@ -267,7 +278,16 @@ export const AutismProfileGenerator = ({ currentUser }) => {
       const data = await response.json()
       setGeneratedProfile(data.generatedProfile)
       setProfileId(data.profileId)
-      setCurrentStep(5) // Go to results step
+      
+      // Hero Plan: Extract insights and supports/avoid lists
+      if (isPremiumUser && data.profileInsights) {
+        setProfileInsights(data.profileInsights)
+        setHelpfulSupports(data.helpfulSupports || [])
+        setSituationsToAvoid(data.situationsToAvoid || [])
+        setClassroomTips(data.classroomTips || [])
+      }
+      
+      setCurrentStep(isPremiumUser ? steps.length - 1 : steps.length - 1) // Go to results step
       toast.success('Autism profile generated successfully!')
 
     } catch (error) {
