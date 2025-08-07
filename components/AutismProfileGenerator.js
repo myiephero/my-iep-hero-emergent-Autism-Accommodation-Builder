@@ -1575,6 +1575,12 @@ export const AutismProfileGenerator = ({ currentUser }) => {
           )}
         </Card>
       </div>
+
+      {/* Hero Plan Upsell Modal */}
+      <HeroPlanUpsellModal 
+        isOpen={showUpsellModal}
+        onClose={() => setShowUpsellModal(false)}
+      />
     </div>
   )
 }
