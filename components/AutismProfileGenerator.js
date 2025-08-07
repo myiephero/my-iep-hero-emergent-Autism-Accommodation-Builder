@@ -742,7 +742,7 @@ export const AutismProfileGenerator = ({ currentUser }) => {
         <Card className="shadow-xl border-0">
           <CardHeader className="bg-gradient-to-r from-purple-600 to-blue-600 text-white rounded-t-lg">
             <CardTitle className="text-2xl flex items-center space-x-2">
-              <steps[currentStep].icon className="w-6 h-6" />
+              {React.createElement(steps[currentStep].icon, { className: "w-6 h-6" })}
               <span>{steps[currentStep].title}</span>
             </CardTitle>
             <CardDescription className="text-purple-100">
