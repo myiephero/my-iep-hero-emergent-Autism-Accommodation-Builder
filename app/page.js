@@ -29,6 +29,7 @@ const App = () => {
   const [selectedParent, setSelectedParent] = useState(null) // For advocates
   const [comments, setComments] = useState([])
   const [newComment, setNewComment] = useState('')
+  const [activeFeature, setActiveFeature] = useState('accommodations') // New: feature switcher
   const [formData, setFormData] = useState({
     childName: '',
     gradeLevel: '',
