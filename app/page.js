@@ -12,9 +12,11 @@ import { Progress } from '@/components/ui/progress'
 import { Badge } from '@/components/ui/badge'
 import { Separator } from '@/components/ui/separator'
 import { Alert, AlertDescription } from '@/components/ui/alert'
-import { CheckCircle, Copy, Download, Star, ArrowRight, ArrowLeft, Loader2, Heart, Brain, Users, BookOpen, MessageSquare, Shield, Settings, User, UserCheck, Crown, Lock, Zap } from 'lucide-react'
+import { CheckCircle, Copy, Download, Star, ArrowRight, ArrowLeft, Loader2, Heart, Brain, Users, BookOpen, MessageSquare, Shield, Settings, User, UserCheck, Crown, Lock, Zap, FileText } from 'lucide-react'
 import { toast } from 'sonner'
 import { AdvancedAIReview, AdvocateRecommendations, DocumentVault, TeamCollaboration, HeroPlanGate } from '@/components/HeroPlanFeatures'
+import { AutismProfileGenerator } from '@/components/AutismProfileGenerator'
+import { AuthProvider } from '@/components/AuthComponents'
 
 const App = () => {
   const [currentUser, setCurrentUser] = useState(null)
