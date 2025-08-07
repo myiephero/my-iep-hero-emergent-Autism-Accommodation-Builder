@@ -363,9 +363,12 @@ metadata:
 
 test_plan:
   current_focus:
-    - "AI-Generated Accommodations Display"
-  stuck_tasks:
-    - "AI-Generated Accommodations Display"
+    - "Autism Profile Generator API - Basic Generation"
+    - "Hero Plan Enhanced Profile Generation" 
+    - "Hero Plan Insights Generation"
+    - "Document Upload Processing"
+    - "Autism Profile CRUD Operations"
+  stuck_tasks: []
   test_all: false
   test_priority: "high_first"
 
@@ -376,3 +379,5 @@ agent_communication:
     message: "BACKEND TESTING COMPLETE - All critical backend functionality PASSED! ✅ OpenAI GPT-4o integration working perfectly (fixed JSON parsing issue), ✅ MongoDB storage operational, ✅ API validation working, ✅ Accommodation history API functional. Fixed minor JSON parsing issue in OpenAI response handling. Free plan generates 8 accommodations, hero plan generates 15 as expected. All APIs tested with realistic autism profile data. Backend is fully functional and ready for production."
   - agent: "testing"
     message: "FRONTEND TESTING COMPLETE - Most frontend functionality PASSED! ✅ Multi-step questionnaire UI working perfectly with all 4 steps, form validation, and navigation. ✅ Mock parent authentication displays correctly. ✅ Responsive design works on mobile. ✅ My IEP Hero branding and UI elements properly styled. ❌ CRITICAL ISSUE: AI generation fails with 502 error due to Kubernetes ingress routing problem - backend API works locally but not via preview URL. This prevents testing of results page, copy/export functionality, and upsell banner. RECOMMENDATION: Fix API routing configuration to resolve 502 errors on /api/* endpoints."
+  - agent: "main"
+    message: "EXTENDED AUTISM PROFILE GENERATOR - Added Hero Plan exclusive features: Enhanced 5-6 paragraph profiles with document upload, What Helps/What Hurts visual charts, Profile Insights Panel (Top 3 Needs/Recommendations/Red Flags), advanced export options (PDF, DOCX, Student Vault), and comprehensive feature gating. Added new API endpoints and enhanced existing ones with dual AI calls for insights generation. Ready for backend testing of new autism profile generation endpoints and Hero Plan functionality."
