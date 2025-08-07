@@ -1,6 +1,7 @@
 import { MongoClient } from 'mongodb'
 import { v4 as uuidv4 } from 'uuid'
 import { NextResponse } from 'next/server'
+import OpenAI from 'openai'
 
 // MongoDB connection
 let client
@@ -14,6 +15,11 @@ async function connectToMongo() {
   }
   return db
 }
+
+// OpenAI connection
+const openai = new OpenAI({
+  apiKey: process.env.OPENAI_API_KEY,
+})
 
 // Helper function to handle CORS
 function handleCORS(response) {
@@ -79,6 +85,132 @@ async function handleRoute(request, { params }) {
       const cleanedStatusChecks = statusChecks.map(({ _id, ...rest }) => rest)
       
       return handleCORS(NextResponse.json(cleanedStatusChecks))
+    }
+
+    // Generate Accommodations - POST /api/accommodations/generate
+    if (route === '/accommodations/generate' && method === 'POST') {
+      const body = await request.json()
+      const {
+        childName,
+        gradeLevel,
+        diagnosisAreas,
+        sensoryPreferences,
+        behavioralChallenges,
+        communicationMethod,
+        additionalInfo,
+        planType = 'free'
+      } = body
+
+      // Validate required fields
+      if (!childName || !gradeLevel || !diagnosisAreas?.length || !communicationMethod) {
+        return handleCORS(NextResponse.json(
+          { error: "Missing required fields" }, 
+          { status: 400 }
+        ))
+      }
+
+      // Create prompt for OpenAI
+      const accommodationCount = planType === 'hero' ? 15 : 8
+      
+      const prompt = `You are an expert IEP accommodation specialist. Create ${accommodationCount} personalized, specific, and implementable IEP accommodations for a child with the following profile:
+
+Child Name: ${childName}
+Grade Level: ${gradeLevel}
+Diagnosis Areas: ${diagnosisAreas.join(', ')}
+Sensory Preferences: ${sensoryPreferences.join(', ')}
+Behavioral Challenges: ${behavioralChallenges.join(', ')}
+Communication Method: ${communicationMethod}
+Additional Information: ${additionalInfo}
+
+Generate accommodations that are:
+1. Specific and actionable for teachers
+2. Evidence-based and legally compliant
+3. Tailored to this child's unique needs
+4. Appropriate for their grade level
+5. Cover different areas: academic, behavioral, sensory, communication, and environmental
+
+Return the accommodations in this exact JSON format:
+{
+  "accommodations": [
+    {
+      "title": "Clear, concise accommodation title",
+      "description": "Detailed description of the accommodation and when to use it",
+      "category": "Academic|Behavioral|Sensory|Communication|Environmental",
+      "implementation": "Specific steps for implementation"
+    }
+  ]
+}
+
+Focus on practical accommodations that address the specific challenges mentioned. Include accommodations for sensory needs, communication support, behavioral management, and academic access as relevant to this child's profile.`
+
+      try {
+        // Call OpenAI API
+        const completion = await openai.chat.completions.create({
+          model: "gpt-4o",
+          messages: [
+            {
+              role: "system",
+              content: "You are an expert IEP accommodation specialist with deep knowledge of autism support strategies, special education law, and evidence-based practices. Always respond with valid JSON only."
+            },
+            {
+              role: "user",
+              content: prompt
+            }
+          ],
+          temperature: 0.7,
+          max_tokens: 2500
+        })
+
+        const response = completion.choices[0].message.content
+        let accommodationsData
+
+        try {
+          accommodationsData = JSON.parse(response)
+        } catch (parseError) {
+          console.error('Failed to parse OpenAI response:', parseError)
+          throw new Error('Invalid response format from AI')
+        }
+
+        // Save to database
+        const accommodationRecord = {
+          id: uuidv4(),
+          childName,
+          gradeLevel,
+          diagnosisAreas,
+          sensoryPreferences,
+          behavioralChallenges,
+          communicationMethod,
+          additionalInfo,
+          planType,
+          accommodations: accommodationsData.accommodations,
+          timestamp: new Date()
+        }
+
+        await db.collection('accommodations').insertOne(accommodationRecord)
+
+        return handleCORS(NextResponse.json(accommodationsData))
+
+      } catch (openaiError) {
+        console.error('OpenAI API Error:', openaiError)
+        return handleCORS(NextResponse.json(
+          { error: "Failed to generate accommodations. Please try again." }, 
+          { status: 500 }
+        ))
+      }
+    }
+
+    // Get Accommodations History - GET /api/accommodations
+    if (route === '/accommodations' && method === 'GET') {
+      const accommodationHistory = await db.collection('accommodations')
+        .find({})
+        .sort({ timestamp: -1 })
+        .limit(100)
+        .toArray()
+
+      // Remove MongoDB's _id field from response
+      const cleanedHistory = accommodationHistory.map(({ _id, ...rest }) => rest)
+      
+      return handleCORS(NextResponse.json(cleanedHistory))
     }
 
     // Route not found
