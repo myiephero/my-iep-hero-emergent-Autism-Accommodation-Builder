@@ -668,6 +668,7 @@ Format the response as a clear, organized profile that can be shared with teache
         let helpfulSupports = []
         let situationsToAvoid = []
         let classroomTips = []
+        let topNeeds = []
 
         if (profileType === 'hero') {
           try {
@@ -685,7 +686,7 @@ STUDENT DATA:
 
 Respond with ONLY valid JSON in this exact format:
 {
-  "topNeeds": ["need1", "need2", "need3"],
+  "topNeeds": ["need1", "need2", "need3", "need4", "need5", "need6", "need7", "need8"],
   "topRecommendations": ["rec1", "rec2", "rec3"],
   "redFlags": ["flag1", "flag2", "flag3"],
   "helpfulSupports": ["support1", "support2", "support3", "support4"],
@@ -698,7 +699,7 @@ Respond with ONLY valid JSON in this exact format:
               messages: [
                 {
                   role: "system",
-                  content: "You are an expert autism specialist. Generate specific, actionable insights in valid JSON format only. No explanations or additional text."
+                  content: "You are an expert autism specialist. Generate specific, actionable insights in valid JSON format only. Provide exactly 8 top needs, 3 recommendations, 3 red flags, 4 supports, 4 situations to avoid, and 4 classroom tips. No explanations or additional text."
                 },
                 {
                   role: "user",
@@ -706,7 +707,7 @@ Respond with ONLY valid JSON in this exact format:
                 }
               ],
               temperature: 0.3,
-              max_tokens: 1000
+              max_tokens: 1200
             })
 
             const insightsResponse = insightsCompletion.choices[0].message.content
@@ -721,13 +722,14 @@ Respond with ONLY valid JSON in this exact format:
 
             const insights = JSON.parse(cleanedInsights)
             profileInsights = {
-              topNeeds: insights.topNeeds || [],
+              topNeeds: insights.topNeeds?.slice(0, 3) || [],
               topRecommendations: insights.topRecommendations || [],
               redFlags: insights.redFlags || []
             }
             helpfulSupports = insights.helpfulSupports || []
             situationsToAvoid = insights.situationsToAvoid || []
             classroomTips = insights.classroomTips || []
+            topNeeds = insights.topNeeds || []
 
           } catch (insightsError) {
             console.error('Failed to generate insights:', insightsError)
@@ -740,6 +742,16 @@ Respond with ONLY valid JSON in this exact format:
             helpfulSupports = ["Visual schedules", "Calm down space", "Clear expectations", "Positive reinforcement"]
             situationsToAvoid = ["Unexpected changes", "Loud noises", "Crowded spaces", "Rushed transitions"]
             classroomTips = ["Provide advance notice", "Use visual cues", "Allow processing time", "Celebrate successes"]
+            topNeeds = [
+              "Consistent daily structure and predictable routines",
+              "Visual supports for communication and transitions", 
+              "Sensory regulation tools and break opportunities",
+              "Clear, concrete instructions with processing time",
+              "Positive behavior support strategies",
+              "Social skills development with peer support",
+              "Executive function scaffolding and organization tools",
+              "Family-school collaboration and communication"
+            ]
           }
         }
 
