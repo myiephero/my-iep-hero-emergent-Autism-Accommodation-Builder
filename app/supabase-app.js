@@ -122,8 +122,28 @@ const MainApp = () => {
     }
   }
 
+  // Handle student selection and auto-fill form data
+  const handleStudentSelect = (student) => {
+    setSelectedStudent(student)
+    if (student) {
+      setFormData({
+        studentId: student.id,
+        childName: student.name,
+        gradeLevel: student.grade_level,
+        diagnosisAreas: student.diagnosis_areas || [],
+        sensoryPreferences: student.sensory_preferences || [],
+        behavioralChallenges: student.behavioral_challenges || [],
+        communicationMethod: student.communication_method || '',
+        additionalInfo: student.additional_notes || ''
+      })
+    } else {
+      resetForm()
+    }
+  }
+
   const resetForm = () => {
     setFormData({
+      studentId: null,
       childName: '',
       gradeLevel: '',
       diagnosisAreas: [],
@@ -132,6 +152,7 @@ const MainApp = () => {
       communicationMethod: '',
       additionalInfo: ''
     })
+    setSelectedStudent(null)
   }
 
   const handleCheckboxChange = (field, value, checked) => {
