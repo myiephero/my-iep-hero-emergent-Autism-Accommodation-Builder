@@ -1141,6 +1141,12 @@ export const AutismProfileGenerator = ({ currentUser }) => {
 
                     <Card className="border-l-4 border-l-purple-600">
                       <CardContent className="p-6">
+                        {isPremiumUser && (
+                          <Badge className="mb-4 bg-orange-100 text-orange-800 border-orange-200">
+                            <Crown className="w-3 h-3 mr-1" />
+                            Enhanced Hero Profile - {generatedProfile ? Math.ceil(generatedProfile.split(' ').length / 200) + 2 : '5-6'} Paragraphs
+                          </Badge>
+                        )}
                         <div className="prose max-w-none">
                           <div className="whitespace-pre-line text-gray-800 leading-relaxed">
                             {generatedProfile}
@@ -1148,6 +1154,170 @@ export const AutismProfileGenerator = ({ currentUser }) => {
                         </div>
                       </CardContent>
                     </Card>
+
+                    {/* Hero Plan: Profile Insights Panel */}
+                    {isPremiumUser && profileInsights && (
+                      <Card className="border-2 border-orange-200 bg-gradient-to-r from-orange-50 to-yellow-50">
+                        <CardHeader>
+                          <CardTitle className="flex items-center space-x-2 text-orange-800">
+                            <BarChart3 className="w-5 h-5" />
+                            <span>Profile Insights</span>
+                            <Badge className="bg-orange-200 text-orange-800">Hero Plan</Badge>
+                          </CardTitle>
+                          <CardDescription className="text-orange-700">
+                            AI-generated key insights and recommendations
+                          </CardDescription>
+                        </CardHeader>
+                        <CardContent>
+                          <div className="grid md:grid-cols-3 gap-6">
+                            <div className="bg-white p-4 rounded-lg border border-green-200">
+                              <h4 className="font-semibold text-green-800 flex items-center mb-3">
+                                <TrendingUp className="w-4 h-4 mr-2" />
+                                Top 3 Needs
+                              </h4>
+                              <ul className="space-y-2">
+                                {(profileInsights.topNeeds || ['Visual supports', 'Structured routines', 'Sensory breaks']).map((need, index) => (
+                                  <li key={index} className="text-sm text-green-700 flex items-start">
+                                    <span className="w-2 h-2 bg-green-500 rounded-full mt-2 mr-2 flex-shrink-0"></span>
+                                    {need}
+                                  </li>
+                                ))}
+                              </ul>
+                            </div>
+
+                            <div className="bg-white p-4 rounded-lg border border-blue-200">
+                              <h4 className="font-semibold text-blue-800 flex items-center mb-3">
+                                <Lightbulb className="w-4 h-4 mr-2" />
+                                Top 3 Recommendations
+                              </h4>
+                              <ul className="space-y-2">
+                                {(profileInsights.topRecommendations || ['Clear visual schedules', 'Quiet workspace option', 'Movement breaks']).map((rec, index) => (
+                                  <li key={index} className="text-sm text-blue-700 flex items-start">
+                                    <span className="w-2 h-2 bg-blue-500 rounded-full mt-2 mr-2 flex-shrink-0"></span>
+                                    {rec}
+                                  </li>
+                                ))}
+                              </ul>
+                            </div>
+
+                            <div className="bg-white p-4 rounded-lg border border-red-200">
+                              <h4 className="font-semibold text-red-800 flex items-center mb-3">
+                                <AlertCircle className="w-4 h-4 mr-2" />
+                                Potential Red Flags
+                              </h4>
+                              <ul className="space-y-2">
+                                {(profileInsights.redFlags || ['Loud, chaotic environments', 'Sudden changes', 'Overwhelming social demands']).map((flag, index) => (
+                                  <li key={index} className="text-sm text-red-700 flex items-start">
+                                    <span className="w-2 h-2 bg-red-500 rounded-full mt-2 mr-2 flex-shrink-0"></span>
+                                    {flag}
+                                  </li>
+                                ))}
+                              </ul>
+                            </div>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    )}
+
+                    {/* Hero Plan: What Helps / What Hurts Chart */}
+                    {isPremiumUser && (helpfulSupports.length > 0 || situationsToAvoid.length > 0 || classroomTips.length > 0) && (
+                      <Card className="border-2 border-blue-200 bg-gradient-to-r from-blue-50 to-purple-50">
+                        <CardHeader>
+                          <CardTitle className="flex items-center space-x-2 text-blue-800">
+                            <BarChart3 className="w-5 h-5" />
+                            <span>What Helps vs. What Hurts</span>
+                            <Badge className="bg-blue-200 text-blue-800">Hero Plan</Badge>
+                          </CardTitle>
+                          <CardDescription className="text-blue-700">
+                            Quick reference guide for educators and support staff
+                          </CardDescription>
+                        </CardHeader>
+                        <CardContent>
+                          <div className="grid md:grid-cols-3 gap-6">
+                            <div className="bg-white p-4 rounded-lg border-l-4 border-green-500">
+                              <h4 className="font-semibold text-green-800 flex items-center mb-3">
+                                <CheckCircle className="w-4 h-4 mr-2" />
+                                ✅ Supports That Help
+                              </h4>
+                              <ul className="space-y-2">
+                                {(helpfulSupports.length > 0 ? helpfulSupports : [
+                                  'Visual schedules and routines',
+                                  'Quiet, organized workspace',
+                                  'Clear, simple instructions',
+                                  'Positive reinforcement'
+                                ]).map((support, index) => (
+                                  <li key={index} className="text-sm text-gray-700 flex items-start">
+                                    <CheckCircle className="w-3 h-3 text-green-500 mt-0.5 mr-2 flex-shrink-0" />
+                                    {support}
+                                  </li>
+                                ))}
+                              </ul>
+                            </div>
+
+                            <div className="bg-white p-4 rounded-lg border-l-4 border-red-500">
+                              <h4 className="font-semibold text-red-800 flex items-center mb-3">
+                                <XCircle className="w-4 h-4 mr-2" />
+                                ❌ Situations to Avoid
+                              </h4>
+                              <ul className="space-y-2">
+                                {(situationsToAvoid.length > 0 ? situationsToAvoid : [
+                                  'Sudden changes in routine',
+                                  'Loud, chaotic environments', 
+                                  'Overwhelming social demands',
+                                  'Lack of structure or predictability'
+                                ]).map((situation, index) => (
+                                  <li key={index} className="text-sm text-gray-700 flex items-start">
+                                    <XCircle className="w-3 h-3 text-red-500 mt-0.5 mr-2 flex-shrink-0" />
+                                    {situation}
+                                  </li>
+                                ))}
+                              </ul>
+                            </div>
+
+                            <div className="bg-white p-4 rounded-lg border-l-4 border-yellow-500">
+                              <h4 className="font-semibold text-yellow-800 flex items-center mb-3">
+                                <Lightbulb className="w-4 h-4 mr-2" />
+                                📌 Classroom Tips
+                              </h4>
+                              <ul className="space-y-2">
+                                {(classroomTips.length > 0 ? classroomTips : [
+                                  'Provide advance notice of changes',
+                                  'Use visual cues and supports',
+                                  'Allow movement and sensory breaks',
+                                  'Celebrate small successes'
+                                ]).map((tip, index) => (
+                                  <li key={index} className="text-sm text-gray-700 flex items-start">
+                                    <Lightbulb className="w-3 h-3 text-yellow-500 mt-0.5 mr-2 flex-shrink-0" />
+                                    {tip}
+                                  </li>
+                                ))}
+                              </ul>
+                            </div>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    )}
+
+                    {/* Free Plan Upgrade Prompt */}
+                    {!isPremiumUser && (
+                      <Alert className="border-orange-200 bg-orange-50">
+                        <Crown className="h-4 w-4 text-orange-600" />
+                        <AlertDescription className="text-orange-800">
+                          <div className="flex items-center justify-between">
+                            <div>
+                              <strong>Unlock Enhanced Profiles!</strong> Upgrade to Hero Plan for 5-6 paragraph profiles, document upload, "What Helps/What Hurts" charts, insights panel, DOCX export, and student vault access.
+                            </div>
+                            <Button 
+                              className="ml-4 bg-orange-600 hover:bg-orange-700"
+                              onClick={() => window.open('/pricing', '_blank')}
+                            >
+                              <Crown className="w-4 h-4 mr-2" />
+                              Upgrade to Hero
+                            </Button>
+                          </div>
+                        </AlertDescription>
+                      </Alert>
+                    )}
 
                     <Alert className="border-green-200 bg-green-50">
                       <Check className="h-4 w-4 text-green-600" />
