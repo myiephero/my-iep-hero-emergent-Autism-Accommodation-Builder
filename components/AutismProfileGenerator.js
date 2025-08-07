@@ -1120,6 +1120,18 @@ export const AutismProfileGenerator = ({ currentUser }) => {
                           <Download className="w-4 h-4 mr-2" />
                           Export PDF
                         </Button>
+                        {isPremiumUser && (
+                          <>
+                            <Button onClick={exportToDocx} variant="outline" className="bg-orange-50 hover:bg-orange-100">
+                              <FileText className="w-4 h-4 mr-2" />
+                              Export DOCX
+                            </Button>
+                            <Button onClick={saveToVault} className="bg-yellow-600 hover:bg-yellow-700">
+                              <Crown className="w-4 h-4 mr-2" />
+                              Save to Vault
+                            </Button>
+                          </>
+                        )}
                         <Button className="bg-green-600 hover:bg-green-700">
                           <Share2 className="w-4 h-4 mr-2" />
                           Share
