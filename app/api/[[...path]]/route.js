@@ -528,7 +528,12 @@ async function handleRoute(request, { params }) {
         communicationStyle,
         behavioralTriggers,
         homeSupports,
-        goals
+        goals,
+        // Hero Plan specific fields
+        individualStrengths,
+        learningStyle,
+        environmentalPreferences,
+        supplementalDocuments
       } = body
 
       if (!studentId) {
