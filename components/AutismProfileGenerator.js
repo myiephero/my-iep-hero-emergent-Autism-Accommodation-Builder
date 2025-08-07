@@ -1332,7 +1332,7 @@ export const AutismProfileGenerator = ({ currentUser }) => {
           </CardContent>
 
           {/* Navigation */}
-          {currentStep < 5 && (
+          {((currentStep < 6 && isPremiumUser) || (currentStep < 5 && !isPremiumUser)) && (
             <div className="flex justify-between items-center p-6 bg-gray-50 rounded-b-lg">
               <Button
                 onClick={prevStep}
@@ -1354,7 +1354,7 @@ export const AutismProfileGenerator = ({ currentUser }) => {
                 disabled={!canProceed() || isGenerating}
                 className="bg-purple-600 hover:bg-purple-700"
               >
-                {currentStep === 4 ? (
+                {((currentStep === 5 && isPremiumUser) || (currentStep === 4 && !isPremiumUser)) ? (
                   isGenerating ? (
                     <>
                       <Loader2 className="w-4 h-4 mr-2 animate-spin" />
@@ -1363,13 +1363,22 @@ export const AutismProfileGenerator = ({ currentUser }) => {
                   ) : (
                     <>
                       <Sparkles className="w-4 h-4 mr-2" />
-                      Generate Profile
+                      Generate {isPremiumUser ? 'Enhanced ' : ''}Profile
                     </>
                   )
                 ) : (
                   <>
-                    Next
-                    <ArrowRight className="w-4 h-4 ml-2" />
+                    {currentStep === 4 && !isPremiumUser ? (
+                      <>
+                        <Sparkles className="w-4 h-4 mr-2" />
+                        Generate Profile
+                      </>
+                    ) : (
+                      <>
+                        Next
+                        <ArrowRight className="w-4 h-4 ml-2" />
+                      </>
+                    )}
                   </>
                 )}
               </Button>
