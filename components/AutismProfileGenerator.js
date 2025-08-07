@@ -112,6 +112,9 @@ export const AutismProfileGenerator = ({ currentUser }) => {
     { title: "Communication", icon: MessageSquare, description: "How they communicate best" },
     { title: "Behavioral Triggers", icon: AlertTriangle, description: "What situations are challenging" },
     { title: "Home & Goals", icon: Target, description: "Supports that work and future goals" },
+    ...(isPremiumUser ? [
+      { title: "Enhanced Details", icon: Crown, description: "Hero Plan: Additional insights & documents", premium: true },
+    ] : []),
     { title: "Generated Profile", icon: FileText, description: "Your personalized autism profile" }
   ]
 
