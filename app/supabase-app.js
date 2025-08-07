@@ -617,36 +617,67 @@ const MainApp = () => {
             {/* Step 0: Child Profile */}
             {currentStep === 0 && (
               <div className="space-y-6">
-                <div>
-                  <Label htmlFor="childName" className="text-base font-medium">Child's Name</Label>
-                  <Input
-                    id="childName"
-                    value={formData.childName}
-                    onChange={(e) => setFormData(prev => ({ ...prev, childName: e.target.value }))}
-                    placeholder="Enter your child's first name"
-                    className="mt-2"
-                  />
-                </div>
+                {/* Student Selector */}
+                <StudentSelector
+                  selectedStudent={selectedStudent}
+                  onStudentSelect={handleStudentSelect}
+                  onStudentCreated={(newStudent) => {
+                    toast.success('Student created! You can now generate accommodations.')
+                    handleStudentSelect(newStudent)
+                  }}
+                />
 
-                <div>
-                  <Label className="text-base font-medium">Grade Level</Label>
-                  <Select value={formData.gradeLevel} onValueChange={(value) => setFormData(prev => ({ ...prev, gradeLevel: value }))}>
-                    <SelectTrigger className="mt-2">
-                      <SelectValue placeholder="Select grade level" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="pre-k">Pre-K</SelectItem>
-                      <SelectItem value="kindergarten">Kindergarten</SelectItem>
-                      <SelectItem value="1st">1st Grade</SelectItem>
-                      <SelectItem value="2nd">2nd Grade</SelectItem>
-                      <SelectItem value="3rd">3rd Grade</SelectItem>
-                      <SelectItem value="4th">4th Grade</SelectItem>
-                      <SelectItem value="5th">5th Grade</SelectItem>
-                      <SelectItem value="middle">Middle School (6-8)</SelectItem>
-                      <SelectItem value="high">High School (9-12)</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
+                {/* Quick Actions for Selected Student */}
+                {selectedStudent && (
+                  <StudentQuickActions 
+                    student={selectedStudent}
+                    onUpdate={(updatedStudent) => {
+                      setSelectedStudent(updatedStudent)
+                    }}
+                  />
+                )}
+
+                {/* Manual Override (only if no student selected) */}
+                {!selectedStudent && (
+                  <div className="p-4 border-2 border-dashed border-gray-200 rounded-lg">
+                    <div className="text-center mb-4">
+                      <p className="text-sm text-gray-500">Or enter details manually</p>
+                    </div>
+                    
+                    <div className="space-y-4">
+                      <div>
+                        <Label htmlFor="childName" className="text-base font-medium">Child's Name</Label>
+                        <Input
+                          id="childName"
+                          value={formData.childName}
+                          onChange={(e) => setFormData(prev => ({ ...prev, childName: e.target.value }))}
+                          placeholder="Enter your child's first name"
+                          className="mt-2"
+                        />
+                      </div>
+
+                      <div>
+                        <Label className="text-base font-medium">Grade Level</Label>
+                        <Select value={formData.gradeLevel} onValueChange={(value) => setFormData(prev => ({ ...prev, gradeLevel: value }))}>
+                          <SelectTrigger className="mt-2">
+                            <SelectValue placeholder="Select grade level" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="pre-k">Pre-K</SelectItem>
+                            <SelectItem value="kindergarten">Kindergarten</SelectItem>
+                            <SelectItem value="1st">1st Grade</SelectItem>
+                            <SelectItem value="2nd">2nd Grade</SelectItem>
+                            <SelectItem value="3rd">3rd Grade</SelectItem>
+                            <SelectItem value="4th">4th Grade</SelectItem>
+                            <SelectItem value="5th">5th Grade</SelectItem>
+                            <SelectItem value="middle">Middle School (6-8)</SelectItem>
+                            <SelectItem value="high">High School (9-12)</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    </div>
+                  </div>
+                )}
               </div>
             )}
 
