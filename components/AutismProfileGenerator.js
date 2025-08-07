@@ -717,10 +717,7 @@ export const AutismProfileGenerator = ({ currentUser }) => {
 
   // Hero Plan: Save to Student Vault
   const saveToVault = async () => {
-    if (!isPremiumUser) {
-      toast.error('Student Vault is available for Hero Plan users')
-      return
-    }
+    if (!requireHeroPlan('save to vault')) return
     
     try {
       // In real implementation, this would save to the document vault API
@@ -749,6 +746,34 @@ export const AutismProfileGenerator = ({ currentUser }) => {
     } catch (error) {
       console.error('Save to vault error:', error)
       toast.error('Failed to save to vault')
+    }
+  }
+
+  // Hero Plan: Share with Advocate
+  const shareWithAdvocate = async () => {
+    if (!requireHeroPlan('share with advocate')) return
+    
+    try {
+      const response = await fetch(`/api/autism-profiles/${profileId}/share`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${user.access_token}`
+        },
+        body: JSON.stringify({
+          studentId: selectedStudent.id,
+          message: 'I would like to share this autism profile for collaboration.'
+        })
+      })
+
+      if (response.ok) {
+        toast.success('Profile shared with your advocate! They will be notified.')
+      } else {
+        throw new Error('Failed to share profile')
+      }
+    } catch (error) {
+      console.error('Share error:', error)
+      toast.error('Failed to share profile. Please try again.')
     }
   }
 
