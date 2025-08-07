@@ -799,8 +799,6 @@ export const AutismProfileGenerator = ({ currentUser }) => {
     }
   }
 
-  const isPremiumUser = profile?.plan_type === 'hero' || profile?.role === 'advocate'
-
   return (
     <div className="min-h-screen bg-gradient-to-br from-purple-50 via-blue-50 to-green-50">
       {/* Header */}
