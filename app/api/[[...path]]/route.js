@@ -615,7 +615,26 @@ Create a professional autism profile that includes:
 
 6. GOALS AND PRIORITIES (Key areas of focus for educational support)
 
-${profileType === 'hero' ? 'ENHANCED PROFILE: Provide detailed implementation strategies, legal compliance notes, and comprehensive accommodation recommendations.' : ''}
+${profileType === 'hero' ? `
+
+ENHANCED HERO PROFILE SECTIONS (additional):
+
+7. INDIVIDUAL STRENGTHS & INTERESTS (Leverage unique abilities and special interests)
+
+8. LEARNING STYLE & PREFERENCES (Specific teaching methods and approaches that work)
+
+9. ENVIRONMENTAL CONSIDERATIONS (Optimal classroom setup and environmental factors)
+
+10. LONG-TERM DEVELOPMENTAL OUTLOOK (Future planning and transition considerations)
+
+${formData.supplementalDocuments?.length > 0 ? `
+
+DOCUMENT INSIGHTS: The following information has been gathered from uploaded documents:
+${formData.supplementalDocuments.map(doc => `- ${doc.name}: ${doc.content.substring(0, 200)}...`).join('\n')}
+Please integrate these insights into the profile where relevant.
+` : ''}
+
+ENHANCED ANALYSIS: Provide detailed implementation strategies, specific classroom modifications, legal compliance considerations, and comprehensive accommodation recommendations. Generate a 5-6 paragraph profile with actionable insights for educators.` : ''}
 
 Write in a professional, strengths-based tone that emphasizes the student's abilities while clearly outlining support needs. Use person-first language and focus on practical, implementable strategies for educators.
 
