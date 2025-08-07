@@ -512,7 +512,238 @@ async function handleRoute(request, { params }) {
       }))
     }
 
-    // ===== BILLING & STRIPE INTEGRATION =====
+    // ===== STUDENT MANAGEMENT =====
+
+    // Get User's Students - GET /api/students
+    if (route === '/students' && method === 'GET') {
+      const { user, profile, error } = await withAuth(request)
+      if (error) {
+        return handleCORS(NextResponse.json({ error }, { status: 401 }))
+      }
+
+      try {
+        let students = []
+        
+        if (profile.role === 'parent') {
+          // Parents see their own students
+          const { data, error } = await supabase
+            .from('students')
+            .select('*')
+            .eq('parent_id', user.id)
+            .eq('is_active', true)
+            .order('created_at', { ascending: false })
+          
+          if (!error) students = data || []
+        } else if (profile.role === 'advocate') {
+          // Advocates see assigned students through student_advocate_assignments
+          const { data, error } = await supabase
+            .from('student_advocate_assignments')
+            .select(`
+              student_id,
+              students (
+                id,
+                parent_id,
+                name,
+                grade_level,
+                diagnosis_areas,
+                sensory_preferences,
+                behavioral_challenges,
+                communication_method,
+                additional_notes,
+                date_of_birth,
+                school_name,
+                current_iep_date,
+                is_active,
+                created_at,
+                updated_at
+              )
+            `)
+            .eq('advocate_id', user.id)
+            .eq('is_active', true)
+          
+          if (!error && data) {
+            students = data.map(assignment => assignment.students).filter(Boolean)
+          }
+        }
+
+        return handleCORS(NextResponse.json({ students }))
+      } catch (error) {
+        console.error('Failed to fetch students:', error)
+        return handleCORS(NextResponse.json({ error: 'Failed to fetch students' }, { status: 500 }))
+      }
+    }
+
+    // Create Student - POST /api/students
+    if (route === '/students' && method === 'POST') {
+      const { user, profile, error } = await withAuth(request)
+      if (error || profile.role !== 'parent') {
+        return handleCORS(NextResponse.json({ error: 'Only parents can create students' }, { status: 403 }))
+      }
+
+      const body = await request.json()
+      const {
+        name,
+        grade_level,
+        diagnosis_areas = [],
+        sensory_preferences = [],
+        behavioral_challenges = [],
+        communication_method,
+        additional_notes,
+        date_of_birth,
+        school_name,
+        current_iep_date
+      } = body
+
+      if (!name || !grade_level) {
+        return handleCORS(NextResponse.json({ error: 'Name and grade level are required' }, { status: 400 }))
+      }
+
+      try {
+        const { data, error } = await supabase
+          .from('students')
+          .insert([{
+            parent_id: user.id,
+            name,
+            grade_level,
+            diagnosis_areas,
+            sensory_preferences,
+            behavioral_challenges,
+            communication_method,
+            additional_notes,
+            date_of_birth,
+            school_name,
+            current_iep_date
+          }])
+          .select()
+          .single()
+
+        if (error) throw error
+
+        // Log student creation
+        await logUserEvent(user.id, 'student_created', { studentId: data.id, studentName: name })
+
+        return handleCORS(NextResponse.json(data))
+      } catch (error) {
+        console.error('Failed to create student:', error)
+        return handleCORS(NextResponse.json({ error: 'Failed to create student' }, { status: 500 }))
+      }
+    }
+
+    // Update Student - PUT /api/students/:studentId
+    if (route.startsWith('/students/') && method === 'PUT') {
+      const { user, profile, error } = await withAuth(request)
+      if (error) {
+        return handleCORS(NextResponse.json({ error }, { status: 401 }))
+      }
+
+      const studentId = route.split('/')[2]
+      const body = await request.json()
+
+      try {
+        // Check if user has access to this student
+        let hasAccess = false
+        
+        if (profile.role === 'parent') {
+          const { data } = await supabase
+            .from('students')
+            .select('id')
+            .eq('id', studentId)
+            .eq('parent_id', user.id)
+            .single()
+          hasAccess = !!data
+        } else if (profile.role === 'advocate') {
+          const { data } = await supabase
+            .from('student_advocate_assignments')
+            .select('id')
+            .eq('student_id', studentId)
+            .eq('advocate_id', user.id)
+            .eq('is_active', true)
+            .single()
+          hasAccess = !!data
+        }
+
+        if (!hasAccess) {
+          return handleCORS(NextResponse.json({ error: 'Access denied' }, { status: 403 }))
+        }
+
+        const { data, error } = await supabase
+          .from('students')
+          .update({
+            ...body,
+            updated_at: new Date().toISOString()
+          })
+          .eq('id', studentId)
+          .select()
+          .single()
+
+        if (error) throw error
+
+        // Log student update
+        await logUserEvent(user.id, 'student_updated', { studentId, updates: Object.keys(body) })
+
+        return handleCORS(NextResponse.json(data))
+      } catch (error) {
+        console.error('Failed to update student:', error)
+        return handleCORS(NextResponse.json({ error: 'Failed to update student' }, { status: 500 }))
+      }
+    }
+
+    // Assign Advocate to Student - POST /api/students/:studentId/assign-advocate
+    if (route.match(/^\/students\/[^\/]+\/assign-advocate$/) && method === 'POST') {
+      const { user, profile, error } = await withAuth(request)
+      if (error || profile.role !== 'parent') {
+        return handleCORS(NextResponse.json({ error: 'Only parents can assign advocates' }, { status: 403 }))
+      }
+
+      const studentId = route.split('/')[2]
+      const body = await request.json()
+      const { advocateId } = body
+
+      try {
+        // Verify the student belongs to this parent
+        const { data: student, error: studentError } = await supabase
+          .from('students')
+          .select('id, name')
+          .eq('id', studentId)
+          .eq('parent_id', user.id)
+          .single()
+
+        if (studentError || !student) {
+          return handleCORS(NextResponse.json({ error: 'Student not found' }, { status: 404 }))
+        }
+
+        // Create the assignment
+        const { data, error } = await supabase
+          .from('student_advocate_assignments')
+          .insert([{
+            student_id: studentId,
+            advocate_id: advocateId,
+            assigned_by: user.id
+          }])
+          .select()
+          .single()
+
+        if (error) throw error
+
+        // Log the assignment
+        await logUserEvent(user.id, 'advocate_assigned_to_student', { 
+          studentId, 
+          advocateId, 
+          studentName: student.name 
+        })
+        
+        await logUserEvent(advocateId, 'student_assigned', { 
+          studentId, 
+          parentId: user.id,
+          studentName: student.name 
+        })
+
+        return handleCORS(NextResponse.json(data))
+      } catch (error) {
+        console.error('Failed to assign advocate:', error)
+        return handleCORS(NextResponse.json({ error: 'Failed to assign advocate' }, { status: 500 }))
+      }
+    }
 
     // Create Stripe Checkout Session - POST /api/billing/create-checkout
     if (route === '/billing/create-checkout' && method === 'POST') {
