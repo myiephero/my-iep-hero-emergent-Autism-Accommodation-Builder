@@ -1256,9 +1256,12 @@ export const AutismProfileGenerator = ({ currentUser }) => {
                             </Button>
                           </>
                         )}
-                        <Button className="bg-green-600 hover:bg-green-700">
+                        <Button 
+                          onClick={shareWithAdvocate}
+                          className="bg-green-600 hover:bg-green-700"
+                        >
                           <Share2 className="w-4 h-4 mr-2" />
-                          Share
+                          {isPremiumUser ? 'Share with Advocate' : 'Share'}
                         </Button>
                       </div>
                     </div>
