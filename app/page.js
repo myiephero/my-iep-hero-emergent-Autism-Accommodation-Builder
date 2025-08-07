@@ -456,14 +456,22 @@ const App = () => {
                   <>
                     <div className="flex items-center justify-between">
                       <h3 className="text-xl font-semibold">Personalized IEP Accommodations for {formData.childName}</h3>
-                      <div className="flex space-x-2">
+                      <div className="flex flex-wrap gap-2">
                         <Button onClick={copyToClipboard} variant="outline" size="sm">
                           <Copy className="w-4 h-4 mr-2" />
                           Copy
                         </Button>
-                        <Button onClick={exportToPDF} variant="outline" size="sm">
+                        <Button onClick={exportToPDF} variant="outline" size="sm" className="bg-blue-50 hover:bg-blue-100 text-blue-700">
                           <Download className="w-4 h-4 mr-2" />
-                          Export PDF
+                          Download PDF
+                        </Button>
+                        <Button onClick={saveToVault} variant="outline" size="sm" className="bg-green-50 hover:bg-green-100 text-green-700">
+                          <CheckCircle className="w-4 h-4 mr-2" />
+                          Save to Vault
+                        </Button>
+                        <Button onClick={assignToStudent} className="bg-orange-600 hover:bg-orange-700 text-white" size="sm">
+                          <Users className="w-4 h-4 mr-2" />
+                          Assign to Student
                         </Button>
                       </div>
                     </div>
