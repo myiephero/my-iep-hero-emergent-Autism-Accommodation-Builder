@@ -809,6 +809,7 @@ Respond with ONLY valid JSON in this exact format:
           response.helpfulSupports = helpfulSupports
           response.situationsToAvoid = situationsToAvoid
           response.classroomTips = classroomTips
+          response.topNeeds = topNeeds
         }
 
         return handleCORS(NextResponse.json(response))
