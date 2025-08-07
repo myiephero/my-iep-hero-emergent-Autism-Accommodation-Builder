@@ -658,13 +658,24 @@ export const AutismProfileGenerator = ({ currentUser }) => {
       case 2: return formData.communicationStyle.primary_method
       case 3: return formData.behavioralTriggers.triggers.length > 0 || formData.behavioralTriggers.other_triggers
       case 4: return formData.homeSupports || formData.goals
+      case 5: // Hero Plan enhanced details step
+        if (!isPremiumUser) return true // Skip for free users
+        return formData.individualStrengths || formData.learningStyle || uploadedDocuments.length > 0
       default: return true
     }
   }
 
   const nextStep = () => {
     if (currentStep < steps.length - 1) {
-      if (currentStep === 4) {
+      // Skip Hero Plan step for free users
+      if (currentStep === 4 && !isPremiumUser) {
+        generateProfile()
+        return
+      }
+      
+      // Generate profile after last input step
+      const lastInputStep = isPremiumUser ? 5 : 4
+      if (currentStep === lastInputStep) {
         generateProfile()
       } else {
         setCurrentStep(prev => prev + 1)
