@@ -30,7 +30,18 @@ import {
   Sparkles,
   Crown,
   FileText,
-  Users
+  Users,
+  Upload,
+  X,
+  CheckCircle,
+  XCircle,
+  Lightbulb,
+  Star,
+  BarChart3,
+  TrendingUp,
+  AlertCircle,
+  Lock,
+  Zap
 } from 'lucide-react'
 import { toast } from 'sonner'
 
