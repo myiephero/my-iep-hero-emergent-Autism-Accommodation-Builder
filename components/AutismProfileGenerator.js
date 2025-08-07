@@ -79,8 +79,21 @@ export const AutismProfileGenerator = ({ currentUser }) => {
       other_triggers: ''
     },
     homeSupports: '',
-    goals: ''
+    goals: '',
+    // Hero Plan exclusive fields
+    supplementalDocuments: [],
+    individualStrengths: '',
+    learningStyle: '',
+    environmentalPreferences: ''
   })
+
+  // Hero Plan exclusive states
+  const [uploadedDocuments, setUploadedDocuments] = useState([])
+  const [profileInsights, setProfileInsights] = useState(null)
+  const [helpfulSupports, setHelpfulSupports] = useState([])
+  const [situationsToAvoid, setSituationsToAvoid] = useState([])
+  const [classroomTips, setClassroomTips] = useState([])
+  const [isUploadingDocument, setIsUploadingDocument] = useState(false)
 
   const steps = [
     { title: "Select Student", icon: User, description: "Choose which student to create a profile for" },
