@@ -386,6 +386,7 @@ export const AutismProfileGenerator = ({ currentUser }) => {
         setHelpfulSupports(data.helpfulSupports || [])
         setSituationsToAvoid(data.situationsToAvoid || [])
         setClassroomTips(data.classroomTips || [])
+        setTopNeeds(data.topNeeds || [])
       }
       
       setCurrentStep(isPremiumUser ? steps.length - 1 : steps.length - 1) // Go to results step
