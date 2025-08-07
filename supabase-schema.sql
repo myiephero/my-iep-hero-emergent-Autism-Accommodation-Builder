@@ -11,6 +11,11 @@ CREATE TABLE user_profiles (
   role TEXT NOT NULL CHECK (role IN ('parent', 'advocate', 'legal_reviewer')),
   plan_type TEXT NOT NULL DEFAULT 'free' CHECK (plan_type IN ('free', 'hero')),
   
+  -- Stripe integration
+  stripe_customer_id TEXT,
+  stripe_subscription_id TEXT,
+  subscription_status TEXT DEFAULT 'inactive',
+  
   -- Advocate specific fields
   specialization TEXT,
   credentials TEXT,
@@ -29,18 +34,68 @@ CREATE TABLE user_profiles (
   updated_at TIMESTAMPTZ DEFAULT NOW()
 );
 
--- 2. Parent-Advocate Assignments
+-- 2. User Events Table (for comprehensive logging)
+CREATE TABLE user_events (
+  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  user_id UUID REFERENCES user_profiles(id) NOT NULL,
+  event_type TEXT NOT NULL,
+  event_data JSONB DEFAULT '{}',
+  ip_address INET,
+  user_agent TEXT,
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- 3. Plan Enforcement Logs
+CREATE TABLE plan_enforcement_logs (
+  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  user_id UUID REFERENCES user_profiles(id) NOT NULL,
+  feature TEXT NOT NULL,
+  action TEXT NOT NULL, -- 'upgrade_prompted', 'access_denied', 'feature_used'
+  user_plan TEXT NOT NULL,
+  required_plan TEXT NOT NULL,
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- 4. Billing Events
+CREATE TABLE billing_events (
+  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  user_id UUID REFERENCES user_profiles(id) NOT NULL,
+  event_type TEXT NOT NULL, -- 'subscription_created', 'payment_succeeded', 'subscription_cancelled'
+  stripe_event_id TEXT,
+  amount INTEGER, -- in cents
+  currency TEXT DEFAULT 'usd',
+  plan_type TEXT,
+  event_data JSONB DEFAULT '{}',
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- 5. Email Notifications Queue
+CREATE TABLE email_notifications (
+  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  user_id UUID REFERENCES user_profiles(id) NOT NULL,
+  email_type TEXT NOT NULL, -- 'welcome', 'hero_welcome', 'advocate_match', 'subscription_confirmation'
+  recipient_email TEXT NOT NULL,
+  template_data JSONB DEFAULT '{}',
+  status TEXT DEFAULT 'pending' CHECK (status IN ('pending', 'sent', 'failed')),
+  sent_at TIMESTAMPTZ,
+  error_message TEXT,
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- 6. Parent-Advocate Assignments
 CREATE TABLE advocate_assignments (
   id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
   advocate_id UUID REFERENCES user_profiles(id) NOT NULL,
   parent_id UUID REFERENCES user_profiles(id) NOT NULL,
   assigned_at TIMESTAMPTZ DEFAULT NOW(),
+  match_score INTEGER DEFAULT 0,
+  match_reason TEXT,
   is_active BOOLEAN DEFAULT true,
   
   UNIQUE(advocate_id, parent_id)
 );
 
--- 3. Children Profiles (for parents)
+-- 7. Children Profiles (for parents)
 CREATE TABLE children_profiles (
   id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
   parent_id UUID REFERENCES user_profiles(id) NOT NULL,
@@ -50,7 +105,7 @@ CREATE TABLE children_profiles (
   created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
--- 4. Accommodation Sessions (updated to work with Supabase)
+-- 8. Accommodation Sessions (updated to work with Supabase)
 CREATE TABLE accommodation_sessions (
   id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
   child_name TEXT NOT NULL,
@@ -80,7 +135,7 @@ CREATE TABLE accommodation_sessions (
   updated_at TIMESTAMPTZ DEFAULT NOW()
 );
 
--- 5. Session Comments
+-- 9. Session Comments
 CREATE TABLE session_comments (
   id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
   session_id UUID REFERENCES accommodation_sessions(id) NOT NULL,
@@ -90,7 +145,7 @@ CREATE TABLE session_comments (
   created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
--- 6. Advanced Reviews (Hero Plan)
+-- 10. Advanced Reviews (Hero Plan)
 CREATE TABLE advanced_reviews (
   id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
   session_id UUID REFERENCES accommodation_sessions(id) NOT NULL,
@@ -101,7 +156,7 @@ CREATE TABLE advanced_reviews (
   created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
--- 7. Document Vault (Hero Plan)
+-- 11. Document Vault (Hero Plan)
 CREATE TABLE document_vault (
   id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
   user_id UUID REFERENCES user_profiles(id) NOT NULL,
@@ -109,10 +164,11 @@ CREATE TABLE document_vault (
   document_type TEXT NOT NULL,
   title TEXT NOT NULL,
   template_data JSONB NOT NULL,
+  file_url TEXT, -- For stored PDFs
   created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
--- 8. Team Invitations (Hero Plan)
+-- 12. Team Invitations (Hero Plan)
 CREATE TABLE team_invitations (
   id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
   session_id UUID REFERENCES accommodation_sessions(id) NOT NULL,
@@ -130,6 +186,10 @@ CREATE TABLE team_invitations (
 
 -- Enable RLS on all tables
 ALTER TABLE user_profiles ENABLE ROW LEVEL SECURITY;
+ALTER TABLE user_events ENABLE ROW LEVEL SECURITY;
+ALTER TABLE plan_enforcement_logs ENABLE ROW LEVEL SECURITY;
+ALTER TABLE billing_events ENABLE ROW LEVEL SECURITY;
+ALTER TABLE email_notifications ENABLE ROW LEVEL SECURITY;
 ALTER TABLE advocate_assignments ENABLE ROW LEVEL SECURITY;
 ALTER TABLE children_profiles ENABLE ROW LEVEL SECURITY;
 ALTER TABLE accommodation_sessions ENABLE ROW LEVEL SECURITY;
@@ -151,7 +211,15 @@ CREATE POLICY "Advocates can view assigned parents" ON user_profiles FOR SELECT 
   )
 );
 
--- Accommodation Sessions Policies
+-- User Events Policies (users can view their own events)
+CREATE POLICY "Users can view their own events" ON user_events FOR SELECT USING (user_id = auth.uid());
+CREATE POLICY "Service role can insert events" ON user_events FOR INSERT WITH CHECK (true);
+
+-- Billing Events Policies
+CREATE POLICY "Users can view their own billing events" ON billing_events FOR SELECT USING (user_id = auth.uid());
+CREATE POLICY "Service role can manage billing events" ON billing_events FOR ALL WITH CHECK (true);
+
+-- Accommodation Sessions Policies (existing)
 CREATE POLICY "Users can view their own sessions" ON accommodation_sessions FOR SELECT USING (
   created_by = auth.uid() OR for_parent = auth.uid()
 );
@@ -201,18 +269,97 @@ CREATE TRIGGER update_user_profiles_updated_at BEFORE UPDATE ON user_profiles FO
 CREATE TRIGGER update_accommodation_sessions_updated_at BEFORE UPDATE ON accommodation_sessions FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
 -- ===============================================
--- SAMPLE DATA (FOR DEVELOPMENT)
+-- EMAIL NOTIFICATION TRIGGERS
 -- ===============================================
 
--- Insert sample advocates (you'll need to create these users in Supabase Auth first)
--- INSERT INTO user_profiles (id, first_name, last_name, email, role, plan_type, specialization, credentials, rating, experience, availability) VALUES
--- ('advocate-uuid-1', 'Maria', 'Gonzalez', 'maria.gonzalez@ieperoo.com', 'advocate', 'hero', 'Autism & Developmental Disabilities', 'M.Ed., Special Education Advocate', 4.9, '8 years', 'high'),
--- ('advocate-uuid-2', 'John', 'Thompson', 'john.thompson@ieperoo.com', 'advocate', 'hero', 'IEP Legal Compliance', 'J.D., Education Law', 4.8, '12 years', 'medium');
+-- Function to queue welcome email
+CREATE OR REPLACE FUNCTION queue_welcome_email()
+RETURNS TRIGGER AS $$
+BEGIN
+  INSERT INTO email_notifications (user_id, email_type, recipient_email, template_data)
+  VALUES (
+    NEW.id,
+    CASE WHEN NEW.plan_type = 'hero' THEN 'hero_welcome' ELSE 'welcome' END,
+    NEW.email,
+    jsonb_build_object(
+      'first_name', NEW.first_name,
+      'last_name', NEW.last_name,
+      'plan_type', NEW.plan_type,
+      'role', NEW.role
+    )
+  );
+  RETURN NEW;
+END;
+$$ language 'plpgsql';
 
--- Insert sample parents
--- INSERT INTO user_profiles (id, first_name, last_name, email, role, plan_type, assigned_advocate) VALUES
--- ('parent-uuid-1', 'Sarah', 'Johnson', 'sarah.johnson@example.com', 'parent', 'free', 'advocate-uuid-1'),
--- ('parent-uuid-2', 'Mike', 'Chen', 'mike.chen@example.com', 'parent', 'hero', 'advocate-uuid-1');
+-- Trigger for new user signup
+CREATE TRIGGER user_signup_email_trigger
+  AFTER INSERT ON user_profiles
+  FOR EACH ROW
+  EXECUTE FUNCTION queue_welcome_email();
+
+-- Function to queue advocate match notification
+CREATE OR REPLACE FUNCTION queue_advocate_match_email()
+RETURNS TRIGGER AS $$
+DECLARE
+  advocate_email TEXT;
+  advocate_name TEXT;
+  parent_name TEXT;
+BEGIN
+  -- Get advocate details
+  SELECT email, first_name || ' ' || last_name INTO advocate_email, advocate_name
+  FROM user_profiles WHERE id = NEW.advocate_id;
+  
+  -- Get parent name
+  SELECT first_name || ' ' || last_name INTO parent_name
+  FROM user_profiles WHERE id = NEW.parent_id;
+  
+  -- Queue notification email for advocate
+  INSERT INTO email_notifications (user_id, email_type, recipient_email, template_data)
+  VALUES (
+    NEW.advocate_id,
+    'advocate_match',
+    advocate_email,
+    jsonb_build_object(
+      'advocate_name', advocate_name,
+      'parent_name', parent_name,
+      'match_score', NEW.match_score,
+      'match_reason', NEW.match_reason
+    )
+  );
+  
+  RETURN NEW;
+END;
+$$ language 'plpgsql';
+
+-- Trigger for new advocate assignment
+CREATE TRIGGER advocate_match_email_trigger
+  AFTER INSERT ON advocate_assignments
+  FOR EACH ROW
+  EXECUTE FUNCTION queue_advocate_match_email();
+
+-- Function to log plan enforcement
+CREATE OR REPLACE FUNCTION log_plan_enforcement()
+RETURNS TRIGGER AS $$
+BEGIN
+  INSERT INTO plan_enforcement_logs (user_id, feature, action, user_plan, required_plan)
+  VALUES (
+    NEW.user_id,
+    (NEW.event_data->>'feature')::TEXT,
+    (NEW.event_data->>'action')::TEXT,
+    (NEW.event_data->>'userPlan')::TEXT,
+    (NEW.event_data->>'requiredPlan')::TEXT
+  );
+  RETURN NEW;
+END;
+$$ language 'plpgsql';
+
+-- Trigger for plan enforcement logging
+CREATE TRIGGER plan_enforcement_trigger
+  AFTER INSERT ON user_events
+  FOR EACH ROW
+  WHEN (NEW.event_type = 'plan_enforcement')
+  EXECUTE FUNCTION log_plan_enforcement();
 
 -- ===============================================
 -- INDEXES FOR PERFORMANCE
@@ -220,6 +367,13 @@ CREATE TRIGGER update_accommodation_sessions_updated_at BEFORE UPDATE ON accommo
 
 CREATE INDEX idx_user_profiles_role ON user_profiles(role);
 CREATE INDEX idx_user_profiles_plan_type ON user_profiles(plan_type);
+CREATE INDEX idx_user_profiles_stripe_customer ON user_profiles(stripe_customer_id);
+CREATE INDEX idx_user_events_user_id ON user_events(user_id);
+CREATE INDEX idx_user_events_event_type ON user_events(event_type);
+CREATE INDEX idx_user_events_created_at ON user_events(created_at);
+CREATE INDEX idx_plan_enforcement_user_feature ON plan_enforcement_logs(user_id, feature);
+CREATE INDEX idx_billing_events_user_id ON billing_events(user_id);
+CREATE INDEX idx_email_notifications_status ON email_notifications(status);
 CREATE INDEX idx_accommodation_sessions_created_by ON accommodation_sessions(created_by);
 CREATE INDEX idx_accommodation_sessions_for_parent ON accommodation_sessions(for_parent);
 CREATE INDEX idx_accommodation_sessions_created_at ON accommodation_sessions(created_at);
@@ -227,14 +381,61 @@ CREATE INDEX idx_session_comments_session_id ON session_comments(session_id);
 CREATE INDEX idx_advocate_assignments_advocate_parent ON advocate_assignments(advocate_id, parent_id);
 
 -- ===============================================
--- NOTES FOR SETUP
+-- SAMPLE DATA FOR DEVELOPMENT
+-- ===============================================
+
+-- Note: You'll need to create users in Supabase Auth first, then run these inserts
+-- with the actual UUIDs from auth.users
+
+-- Example advocate profiles (replace UUIDs with actual ones)
+/*
+INSERT INTO user_profiles (id, first_name, last_name, email, role, plan_type, specialization, credentials, rating, experience, availability) VALUES
+('00000000-0000-0000-0000-000000000001', 'Maria', 'Gonzalez', 'maria.gonzalez@ieperoo.com', 'advocate', 'hero', 'Autism & Developmental Disabilities', 'M.Ed., Special Education Advocate', 4.9, '8 years', 'high'),
+('00000000-0000-0000-0000-000000000002', 'John', 'Thompson', 'john.thompson@ieperoo.com', 'advocate', 'hero', 'IEP Legal Compliance', 'J.D., Education Law', 4.8, '12 years', 'medium');
+*/
+
+-- ===============================================
+-- EDGE FUNCTIONS FOR EMAIL PROCESSING
+-- ===============================================
+
+-- This is a placeholder for Supabase Edge Functions that would process the email queue
+-- You would create these functions in the Supabase dashboard under "Edge Functions"
+
+/*
+Example Edge Function to process email notifications:
+
+CREATE OR REPLACE FUNCTION process_email_queue()
+RETURNS void AS $$
+DECLARE
+  notification RECORD;
+BEGIN
+  FOR notification IN 
+    SELECT * FROM email_notifications 
+    WHERE status = 'pending' 
+    ORDER BY created_at 
+    LIMIT 10
+  LOOP
+    -- Send email using Resend, SendGrid, or other email service
+    -- Update status based on success/failure
+    UPDATE email_notifications 
+    SET 
+      status = 'sent',
+      sent_at = NOW()
+    WHERE id = notification.id;
+  END LOOP;
+END;
+$$ language 'plpgsql';
+*/
+
+-- ===============================================
+-- SETUP INSTRUCTIONS
 -- ===============================================
 
 /*
 1. Run this SQL in your Supabase SQL editor
-2. Create test users through Supabase Auth UI or signup flow
-3. The user_profiles table will be populated when users sign up through the app
-4. RLS policies ensure users can only access their own data and assigned relationships
-5. Advocates can only see data for parents assigned to them
-6. Hero Plan features are gated by the plan_type field in user_profiles
+2. Set up email templates in your email service provider
+3. Create Edge Functions for email processing
+4. Set up Stripe webhooks to update billing_events
+5. Configure your application environment variables
+6. Test the complete flow with sample users
 */
