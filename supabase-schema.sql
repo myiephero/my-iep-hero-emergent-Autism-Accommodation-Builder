@@ -217,6 +217,29 @@ CREATE POLICY "Advocates can view assigned parents" ON user_profiles FOR SELECT 
   )
 );
 
+-- Students Policies
+CREATE POLICY "Parents can view their own students" ON students FOR SELECT USING (parent_id = auth.uid());
+CREATE POLICY "Parents can create students" ON students FOR INSERT WITH CHECK (parent_id = auth.uid());
+CREATE POLICY "Parents can update their own students" ON students FOR UPDATE USING (parent_id = auth.uid());
+
+-- Advocates can view assigned students
+CREATE POLICY "Advocates can view assigned students" ON students FOR SELECT USING (
+  EXISTS (
+    SELECT 1 FROM student_advocate_assignments 
+    WHERE student_id = students.id AND advocate_id = auth.uid() AND is_active = true
+  )
+);
+
+-- Student-Advocate Assignment Policies
+CREATE POLICY "Parents can manage student advocate assignments" ON student_advocate_assignments 
+FOR ALL USING (
+  assigned_by = auth.uid() OR 
+  EXISTS (SELECT 1 FROM students WHERE id = student_advocate_assignments.student_id AND parent_id = auth.uid())
+);
+
+CREATE POLICY "Advocates can view their assignments" ON student_advocate_assignments 
+FOR SELECT USING (advocate_id = auth.uid());
+
 -- User Events Policies (users can view their own events)
 CREATE POLICY "Users can view their own events" ON user_events FOR SELECT USING (user_id = auth.uid());
 CREATE POLICY "Service role can insert events" ON user_events FOR INSERT WITH CHECK (true);
