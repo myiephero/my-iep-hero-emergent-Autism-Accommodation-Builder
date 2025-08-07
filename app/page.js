@@ -539,9 +539,7 @@ const App = () => {
         {/* Conditional Feature Rendering */}
         {activeFeature === 'profile' ? (
           <div className="mt-[-2rem]">
-            <AuthProvider>
-              <AutismProfileGenerator />
-            </AuthProvider>
+            <AutismProfileGenerator currentUser={currentUser} />
           </div>
         ) : (
           <>
