@@ -173,17 +173,68 @@ CREATE TABLE document_vault (
   created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
--- 12. Team Invitations (Hero Plan)
-CREATE TABLE team_invitations (
+-- 13. Autism Profiles (New Feature)
+CREATE TABLE autism_profiles (
   id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
-  session_id UUID REFERENCES accommodation_sessions(id) NOT NULL,
-  invited_by UUID REFERENCES user_profiles(id) NOT NULL,
-  invite_email TEXT NOT NULL,
-  role TEXT DEFAULT 'viewer' CHECK (role IN ('viewer', 'commenter', 'editor')),
-  status TEXT DEFAULT 'pending' CHECK (status IN ('pending', 'accepted', 'declined', 'expired')),
-  expires_at TIMESTAMPTZ DEFAULT (NOW() + INTERVAL '7 days'),
-  created_at TIMESTAMPTZ DEFAULT NOW()
+  user_id UUID REFERENCES user_profiles(id) NOT NULL,
+  student_id UUID REFERENCES students(id) NOT NULL,
+  
+  -- Form data sections
+  sensory_preferences JSONB DEFAULT '{}',
+  communication_style JSONB DEFAULT '{}',
+  behavioral_triggers JSONB DEFAULT '{}',
+  home_supports TEXT,
+  goals TEXT,
+  
+  -- AI generated content
+  generated_profile TEXT,
+  profile_type TEXT DEFAULT 'standard', -- standard or hero
+  
+  -- Sharing and export
+  is_shared BOOLEAN DEFAULT false,
+  shared_with TEXT[], -- email addresses
+  exported_count INTEGER DEFAULT 0,
+  
+  -- Metadata
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW()
 );
+
+-- Indexes for autism profiles
+CREATE INDEX idx_autism_profiles_user_id ON autism_profiles(user_id);
+CREATE INDEX idx_autism_profiles_student_id ON autism_profiles(student_id);
+CREATE INDEX idx_autism_profiles_created_at ON autism_profiles(created_at);
+
+-- RLS for autism profiles
+ALTER TABLE autism_profiles ENABLE ROW LEVEL SECURITY;
+
+-- Parents can manage their own students' profiles
+CREATE POLICY "Parents can manage their students' autism profiles" ON autism_profiles 
+FOR ALL USING (
+  EXISTS (
+    SELECT 1 FROM students 
+    WHERE students.id = autism_profiles.student_id 
+    AND students.parent_id = auth.uid()
+  )
+);
+
+-- Advocates can view assigned students' profiles
+CREATE POLICY "Advocates can view assigned students' autism profiles" ON autism_profiles 
+FOR SELECT USING (
+  EXISTS (
+    SELECT 1 FROM student_advocate_assignments sa
+    JOIN students s ON s.id = sa.student_id
+    WHERE sa.advocate_id = auth.uid() 
+    AND sa.is_active = true
+    AND s.id = autism_profiles.student_id
+  )
+);
+
+-- Update trigger for autism profiles
+CREATE TRIGGER update_autism_profiles_updated_at 
+BEFORE UPDATE ON autism_profiles 
+FOR EACH ROW 
+EXECUTE FUNCTION update_updated_at_column();
 
 -- ===============================================
 -- ROW LEVEL SECURITY (RLS) POLICIES
