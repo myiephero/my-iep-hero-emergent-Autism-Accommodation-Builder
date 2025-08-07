@@ -1,0 +1,65 @@
+<analysis>
+The AI engineer successfully built the Autism Accommodation Builder from an MVP to a near-production-ready application. Initially, the focus was on the core AI accommodation generation, followed by mock authentication and UI. Key challenges included obtaining the OpenAI API key and troubleshooting Kubernetes ingress routing issues, which were acknowledged but not fully resolved by the AI. A significant pivot involved replacing mock authentication with comprehensive Supabase integration, introducing role-based access (Parent/Advocate), and plan gating (Free/Hero). Subsequently, advanced Hero Plan features, Stripe billing, robust logging, and automated email flows were integrated. Most recently, the system evolved to manage student profiles via a smart dropdown, linking sessions to specific students. The current task involves building an Autism Profile Generator based on detailed intake forms, using OpenAI, and storing data in Supabase, with the AI engineer actively working on the component and API endpoints.
+</analysis>
+
+<product_requirements>
+The Autism Accommodation Builder helps parents generate personalized IEP accommodations for children with autism. It started as an MVP with a questionnaire UI, an OpenAI-powered AI accommodation generator (8-10 items), editable/exportable output (PDF/clipboard), and an upsell section for a Hero Plan. Data storage was initially to Supabase/MongoDB, settling on MongoDB first, then transitioning to Supabase for authentication and advanced features.
+
+The application has since evolved to include:
+- **Dual Role Support**: Parent (fills questionnaire, views/edits/saves/exports own results) and Advocate (selects assigned parent, views drafts, generates accommodations, comments, approves/edits).
+- **Collaboration Features**: Shared workspace, timestamped/role-attributed comments per section, and an advocate-driven approval workflow (Approved by your Advocate).
+- **Hero Plan Premium Features**: Advanced AI Review (deeper IEP analysis, multi-section output with GPT-4 Turbo), Priority Advocate Pairing, Legal Risk Scan, IEP Templates + Document Vault, and Team Collaboration View (inviting others to sessions). These features are plan-gated, showing lock icons/upsell modals to free users.
+- **Supabase Authentication**: Replaced mock auth with full email/password signup/login, user profiles (role, plan), role-based routing, and secure session management.
+- **User Settings Page**: To manage profile, view billing history, cancel/upgrade subscriptions.
+- **Stripe Integration**: For billing and customer portal access.
+- **Logging & Email Flows**: For signups, plan upgrades, advocate matches, welcome emails, and notifications.
+- **Student Management**: Replaced manual child name input with a Select Student dropdown, fetching student profiles for authenticated users (parents/advocates), auto-filling form fields, and linking sessions to  in the database.
+- **Current Task - Autism Profile Generator**: A new feature to create a structured intake form (Sensory Preferences, Communication Style, Behavioral Triggers, Home Supports, Goals) that generates a 2-3 paragraph AI-powered narrative Autism Profile (summary, educator tips, suggested supports). This profile is stored in Supabase, displayed on the frontend, and can be copied/exported.
+</product_requirements>
+
+<key_technical_concepts>
+- **Full-Stack Development**: Next.js (frontend & API routes), React (components).
+- **Styling**: Tailwind CSS, Shadcn/UI for consistent and responsive UI.
+- **Database**: MongoDB (initial core data), Supabase (authentication, user profiles, RLS, extended schemas).
+- **AI**: OpenAI GPT-4o/GPT-4 Turbo for content generation (accommodations, profiles, reviews).
+- **Payments**: Stripe for billing and subscription management.
+- **Utilities**: UUIDs for unique identifiers, Supervisor for process management.
+</key_technical_concepts>
+
+<code_architecture>
+The application uses a Next.js full-stack architecture.
+
+
+
+- ****: This is the central backend API file. It handles all API requests (GET, POST, PUT, DELETE) for accommodation generation (OpenAI integration), session management, comments, approvals, user authentication (Supabase), billing (Stripe), logging, and student management. It contains the core logic for interacting with MongoDB (initially) and Supabase, and orchestrates calls to external APIs like OpenAI and Stripe. It has been frequently updated throughout the development to add new endpoints and logic for collaboration, Hero Plan features, and student management.
+- ****: This is the main frontend page component. It renders the core application UI, including the multi-step questionnaire, AI-generated results display, collaboration features, and integrates various components like , , and . It manages the client-side state and interactions, dynamically rendering content based on user roles and plan status.
+- ****: Defines the global layout for the Next.js application, including common UI elements like headers and handling global styling.
+- ****: Contains the Supabase client initialization and helper functions for interacting with the Supabase API, managing authentication, and data access. It encapsulates Supabase-specific logic for reuse across frontend and backend.
+- ****: A component designed to render the premium features available to Hero Plan users, potentially showing gated content or upsell messages.
+- ****: A client-side component or logic that visually gates features based on the user's subscription plan, often displaying upgrade prompts for free users attempting to access premium functionality.
+- ****: Manages the user's profile information, role, plan details, and integrates with Stripe for billing history and subscription management.
+- ****: Replaces manual child name input. This component fetches and displays a dropdown of students assigned to the authenticated user, enabling selection and auto-filling of form data.
+- ****: A crucial file defining the Supabase database schema, including tables for , , , , , , , , and . It also includes Row Level Security (RLS) policies to enforce data access control based on user roles and ownership.
+- ****: Stores environment variables such as , , , , and Supabase credentials (, ).
+</code_architecture>
+
+<pending_tasks>
+- Complete the implementation of the  component to fully display the generated profile and integrate the Copy to Clipboard and Export to PDF buttons.
+- Implement the Share with advocate button for the generated Autism Profile (mentioned as optional for future use).
+- Resolve the Kubernetes ingress routing issue (502 errors on  endpoints when accessed via the preview URL), which was acknowledged but not fully fixed.
+</pending_tasks>
+
+<current_work>
+Immediately before this summary request, the AI engineer was tasked with developing the Autism Profile Generator. This involves creating a new structured intake form for sensory preferences, communication style, behavioral triggers, home supports, and goals. The collected data is then used to generate a 2-3 paragraph narrative Autism Profile using OpenAI GPT-4o. This profile will include a summary of needs, tips for educators, and suggested supports.
+
+The work currently in progress involves:
+- **Updating Supabase Schema**: The  file has been updated to include the  table to store the form inputs () and the  output, linked to  and .
+- **Backend API Endpoints**: The  file has been modified to add API endpoints for managing autism profiles (e.g.,  to save form data and trigger AI generation,  to retrieve profiles).
+- **Frontend Component Development**: The AI engineer has just begun creating the  component ( or similar) which will house the multi-section input form and display the generated profile.
+
+The system is now configured to fetch and use a student ID from the previously implemented student dropdown, associating the generated autism profile with a specific student record. Role-based access logic will ensure parents only see profiles for their students, and advocates only for their assigned students. The next steps will involve completing the frontend component and fully integrating the AI generation and display.
+</current_work>
+
+<optional_next_step>
+Complete the  component, integrating the multi-section form, AI generation display, and Copy to Clipboard / Export to PDF functionalities.
+</optional_next_step>
