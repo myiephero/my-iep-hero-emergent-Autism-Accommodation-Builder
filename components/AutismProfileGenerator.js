@@ -56,6 +56,99 @@ import {
 } from 'lucide-react'
 import { toast } from 'sonner'
 
+// Hero Plan Upsell Modal Component
+const HeroPlanUpsellModal = ({ isOpen, onClose }) => {
+  if (!isOpen) return null
+
+  return (
+    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+      <div className="bg-white rounded-lg shadow-xl max-w-md w-full">
+        <div className="p-6">
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center space-x-2">
+              <Crown className="w-6 h-6 text-orange-600" />
+              <h3 className="text-xl font-semibold">Upgrade to Hero Plan</h3>
+            </div>
+            <Button variant="outline" size="sm" onClick={onClose}>
+              <X className="w-4 h-4" />
+            </Button>
+          </div>
+          
+          <div className="space-y-4">
+            <p className="text-gray-600">
+              Unlock enhanced autism profiles with premium features:
+            </p>
+            
+            <div className="space-y-3">
+              <div className="flex items-start space-x-3">
+                <Star className="w-5 h-5 text-orange-500 mt-0.5 flex-shrink-0" />
+                <div>
+                  <p className="font-medium">Enhanced 5-6 Paragraph Profiles</p>
+                  <p className="text-sm text-gray-500">Comprehensive analysis with detailed sections</p>
+                </div>
+              </div>
+              
+              <div className="flex items-start space-x-3">
+                <Upload className="w-5 h-5 text-blue-500 mt-0.5 flex-shrink-0" />
+                <div>
+                  <p className="font-medium">Document Upload & Analysis</p>
+                  <p className="text-sm text-gray-500">Upload IEPs, evaluations for richer insights</p>
+                </div>
+              </div>
+              
+              <div className="flex items-start space-x-3">
+                <BarChart3 className="w-5 h-5 text-green-500 mt-0.5 flex-shrink-0" />
+                <div>
+                  <p className="font-medium">Supports vs. Triggers Chart</p>
+                  <p className="text-sm text-gray-500">Visual reference for educators</p>
+                </div>
+              </div>
+              
+              <div className="flex items-start space-x-3">
+                <FileText className="w-5 h-5 text-purple-500 mt-0.5 flex-shrink-0" />
+                <div>
+                  <p className="font-medium">Advanced Export Options</p>
+                  <p className="text-sm text-gray-500">PDF, DOCX, and save to vault</p>
+                </div>
+              </div>
+              
+              <div className="flex items-start space-x-3">
+                <Share2 className="w-5 h-5 text-indigo-500 mt-0.5 flex-shrink-0" />
+                <div>
+                  <p className="font-medium">Share with Advocate</p>
+                  <p className="text-sm text-gray-500">Collaborate with your IEP team</p>
+                </div>
+              </div>
+            </div>
+            
+            <div className="pt-4 border-t">
+              <Button 
+                className="w-full bg-orange-600 hover:bg-orange-700"
+                onClick={() => {
+                  window.open('/pricing', '_blank')
+                  onClose()
+                }}
+              >
+                <Crown className="w-4 h-4 mr-2" />
+                Upgrade to Hero Plan
+                <ExternalLink className="w-4 h-4 ml-2" />
+              </Button>
+              
+              <Button 
+                variant="ghost" 
+                className="w-full mt-2"
+                onClick={onClose}
+              >
+                Maybe Later
+              </Button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  )
+}
+
 // Mock authentication hook for development - uses the current user from main app
 const useMockAuth = () => {
   const [mockUser, setMockUser] = useState({
