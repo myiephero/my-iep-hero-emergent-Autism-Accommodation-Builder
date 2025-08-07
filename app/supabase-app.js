@@ -174,6 +174,7 @@ const MainApp = () => {
           ...getAuthHeaders()
         },
         body: JSON.stringify({
+          studentId: formData.studentId,
           ...formData,
           selectedParentId: selectedParent?.id // For advocates
         })
