@@ -425,7 +425,31 @@ const App = () => {
               </div>
               <div>
                 <h1 className="text-xl font-semibold text-gray-900">My IEP Hero</h1>
-                <p className="text-sm text-gray-500">Autism Accommodation Builder</p>
+                <p className="text-sm text-gray-500">
+                  {activeFeature === 'accommodations' ? 'Autism Accommodation Builder' : 'Autism Profile Generator'}
+                </p>
+              </div>
+              
+              {/* Feature Navigation */}
+              <div className="ml-6 flex space-x-2">
+                <Button
+                  variant={activeFeature === 'accommodations' ? 'default' : 'outline'}
+                  size="sm"
+                  onClick={() => setActiveFeature('accommodations')}
+                  className="text-xs"
+                >
+                  <BookOpen className="w-4 h-4 mr-2" />
+                  Accommodations
+                </Button>
+                <Button
+                  variant={activeFeature === 'profile' ? 'default' : 'outline'}
+                  size="sm"
+                  onClick={() => setActiveFeature('profile')}
+                  className="text-xs"
+                >
+                  <FileText className="w-4 h-4 mr-2" />
+                  Profile Generator
+                </Button>
               </div>
             </div>
             
