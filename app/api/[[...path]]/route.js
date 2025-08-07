@@ -1120,6 +1120,68 @@ async function generateIEPTemplate(session, templateType) {
   return template
 }
 
+// Logging helper function
+async function logUserEvent(userId, eventType, eventData = {}) {
+  try {
+    await db.collection('user_events').insertOne({
+      id: uuidv4(),
+      userId,
+      eventType,
+      eventData,
+      timestamp: new Date(),
+      createdAt: new Date()
+    })
+  } catch (error) {
+    console.error('Failed to log user event:', error)
+  }
+}
+
+// Email notification functions
+async function sendWelcomeEmail(email, userId) {
+  try {
+    // This would integrate with your email service (Resend, SendGrid, etc.)
+    console.log(`Sending welcome email to ${email}`)
+    
+    // For now, we'll just log it
+    await logUserEvent(userId, 'welcome_email_sent', { email })
+  } catch (error) {
+    console.error('Failed to send welcome email:', error)
+  }
+}
+
+async function sendHeroPlanWelcomeEmail(email, userId) {
+  try {
+    console.log(`Sending Hero Plan welcome email to ${email}`)
+    await logUserEvent(userId, 'hero_welcome_email_sent', { email })
+  } catch (error) {
+    console.error('Failed to send Hero welcome email:', error)
+  }
+}
+
+async function sendAdvocateMatchNotification(advocateId, parentId) {
+  try {
+    // Get advocate and parent details
+    const { data: advocate } = await supabase
+      .from('user_profiles')
+      .select('*')
+      .eq('id', advocateId)
+      .single()
+      
+    const { data: parent } = await supabase
+      .from('user_profiles')
+      .select('*')
+      .eq('id', parentId)
+      .single()
+
+    if (advocate && parent) {
+      console.log(`Notifying advocate ${advocate.email} about new parent assignment: ${parent.email}`)
+      await logUserEvent(advocateId, 'match_notification_sent', { parentId, parentEmail: parent.email })
+    }
+  } catch (error) {
+    console.error('Failed to send advocate match notification:', error)
+  }
+}
+
 // Export all HTTP methods
 export const GET = handleRoute
 export const POST = handleRoute
