@@ -35,7 +35,7 @@ export async function OPTIONS() {
   return handleCORS(new NextResponse(null, { status: 200 }))
 }
 
-// Mock Users Data (In production, this would come from a proper auth system)
+// Updated Mock Users Data with Hero Plan features
 const mockUsers = {
   'parent_sarah': {
     id: 'parent_sarah',
@@ -56,6 +56,8 @@ const mockUsers = {
     role: 'parent',
     planType: 'hero',
     assignedAdvocate: 'advocate_maria',
+    prioritySupport: true,
+    legalReviewEnabled: true,
     children: [
       { name: 'David Chen', grade: '5th', id: 'child_david' }
     ]
@@ -67,6 +69,8 @@ const mockUsers = {
     role: 'parent',
     planType: 'hero',
     assignedAdvocate: 'advocate_john',
+    prioritySupport: true,
+    legalReviewEnabled: true,
     children: [
       { name: 'Sofia Rodriguez', grade: '2nd', id: 'child_sofia' }
     ]
@@ -79,7 +83,10 @@ const mockUsers = {
     planType: 'advocate',
     specialization: 'Autism & Developmental Disabilities',
     assignedParents: ['parent_sarah', 'parent_mike'],
-    credentials: 'M.Ed., Special Education Advocate'
+    credentials: 'M.Ed., Special Education Advocate',
+    rating: 4.9,
+    experience: '8 years',
+    availability: 'high'
   },
   'advocate_john': {
     id: 'advocate_john',
@@ -89,7 +96,170 @@ const mockUsers = {
     planType: 'advocate',
     specialization: 'IEP Legal Compliance',
     assignedParents: ['parent_lisa'],
-    credentials: 'J.D., Education Law'
+    credentials: 'J.D., Education Law',
+    rating: 4.8,
+    experience: '12 years',
+    availability: 'medium'
+  },
+  'legal_reviewer': {
+    id: 'legal_reviewer',
+    name: 'Dr. Patricia Williams',
+    email: 'patricia.williams@ieperoo.com',
+    role: 'legal_reviewer',
+    planType: 'legal',
+    specialization: 'Special Education Law',
+    credentials: 'J.D., Ph.D. Education Law',
+    rating: 4.9,
+    experience: '15 years'
+  }
+}
+
+// Hero Plan Features - Legal Risk Assessment
+const legalRiskAnalyzer = {
+  assessRisks: (accommodationData) => {
+    const risks = []
+    const warnings = []
+    
+    // Check for missing essential accommodations
+    if (!accommodationData.diagnosisAreas.includes('Autism Spectrum Disorder (ASD)')) {
+      risks.push({
+        type: 'missing_diagnosis',
+        level: 'high',
+        message: 'Autism diagnosis not clearly documented',
+        recommendation: 'Ensure autism spectrum disorder is properly documented in IEP'
+      })
+    }
+    
+    // Check for sensory accommodations
+    if (accommodationData.sensoryPreferences.length > 0 && accommodationData.accommodations.filter(acc => acc.category === 'Sensory').length < 2) {
+      risks.push({
+        type: 'insufficient_sensory',
+        level: 'medium',
+        message: 'Limited sensory accommodations for documented sensory needs',
+        recommendation: 'Add more comprehensive sensory supports'
+      })
+    }
+    
+    // Check for behavioral supports
+    if (accommodationData.behavioralChallenges.length > 0 && accommodationData.accommodations.filter(acc => acc.category === 'Behavioral').length < 2) {
+      risks.push({
+        type: 'insufficient_behavioral',
+        level: 'medium',
+        message: 'Limited behavioral supports for documented challenges',
+        recommendation: 'Include more behavior intervention strategies'
+      })
+    }
+    
+    // Check for communication supports
+    if (accommodationData.communicationMethod !== 'verbal' && accommodationData.accommodations.filter(acc => acc.category === 'Communication').length < 2) {
+      risks.push({
+        type: 'insufficient_communication',
+        level: 'high',
+        message: 'Inadequate communication supports for non-verbal student',
+        recommendation: 'Add assistive technology and communication supports'
+      })
+    }
+    
+    // Check for measurable goals (simulated)
+    warnings.push({
+      type: 'evaluation_reminder',
+      message: 'Ensure all accommodations have measurable outcomes and regular review dates',
+      action: 'Schedule progress monitoring meetings'
+    })
+    
+    return { risks, warnings }
+  }
+}
+
+// Hero Plan Features - Advanced AI Prompts
+const generateAdvancedReview = async (accommodationData) => {
+  const prompt = `As an expert IEP legal compliance specialist and autism accommodation expert, provide a comprehensive multi-section analysis of this IEP accommodation plan:
+
+CHILD PROFILE:
+Name: ${accommodationData.childName}
+Grade: ${accommodationData.gradeLevel}
+Diagnosis: ${accommodationData.diagnosisAreas.join(', ')}
+Sensory Needs: ${accommodationData.sensoryPreferences.join(', ')}
+Behavioral Needs: ${accommodationData.behavioralChallenges.join(', ')}
+Communication: ${accommodationData.communicationMethod}
+Additional Info: ${accommodationData.additionalInfo}
+
+CURRENT ACCOMMODATIONS:
+${accommodationData.accommodations.map((acc, i) => `${i+1}. ${acc.title} (${acc.category})\n   ${acc.description}`).join('\n')}
+
+Provide analysis in this exact JSON format:
+{
+  "overall_assessment": {
+    "strength_score": "1-10 rating",
+    "compliance_score": "1-10 rating", 
+    "summary": "2-3 sentence overview"
+  },
+  "detailed_review": {
+    "strengths": ["strength 1", "strength 2", "strength 3"],
+    "concerns": ["concern 1", "concern 2", "concern 3"],
+    "missing_elements": ["missing item 1", "missing item 2"],
+    "legal_compliance": {
+      "status": "compliant|concerns|non-compliant",
+      "issues": ["legal issue 1", "legal issue 2"]
+    }
+  },
+  "recommendations": {
+    "immediate_actions": ["action 1", "action 2"],
+    "additional_accommodations": [
+      {
+        "title": "Recommended accommodation title",
+        "category": "Academic|Behavioral|Sensory|Communication|Environmental",
+        "description": "Detailed description",
+        "priority": "high|medium|low"
+      }
+    ],
+    "goals_suggestions": ["measurable goal 1", "measurable goal 2"]
+  },
+  "next_steps": {
+    "timeline": "Recommended timeline for implementation",
+    "team_meeting": "Suggested agenda items",
+    "monitoring": "Progress monitoring recommendations"
+  }
+}`
+
+  try {
+    const completion = await openai.chat.completions.create({
+      model: "gpt-4o", // Using GPT-4o for Hero features
+      messages: [
+        {
+          role: "system", 
+          content: "You are a leading expert in IEP development, special education law, and autism support strategies. Provide thorough, legally sound, and practical analysis. Always respond with valid JSON only."
+        },
+        {
+          role: "user",
+          content: prompt
+        }
+      ],
+      temperature: 0.3,
+      max_tokens: 3000
+    })
+
+    const response = completion.choices[0].message.content
+    let reviewData
+
+    try {
+      // Clean the response
+      let cleanedResponse = response.trim()
+      if (cleanedResponse.startsWith('```json')) {
+        cleanedResponse = cleanedResponse.replace(/^```json\s*/, '').replace(/\s*```$/, '')
+      } else if (cleanedResponse.startsWith('```')) {
+        cleanedResponse = cleanedResponse.replace(/^```\s*/, '').replace(/\s*```$/, '')
+      }
+      
+      reviewData = JSON.parse(cleanedResponse)
+    } catch (parseError) {
+      throw new Error('Invalid response format from AI')
+    }
+
+    return reviewData
+  } catch (error) {
+    console.error('Advanced AI Review Error:', error)
+    throw error
   }
 }
 
@@ -102,22 +272,16 @@ async function handleRoute(request, { params }) {
   try {
     const db = await connectToMongo()
 
-    // Root endpoint - GET /api/root (since /api/ is not accessible with catch-all)
-    if (route === '/root' && method === 'GET') {
-      return handleCORS(NextResponse.json({ message: "Hello World" }))
-    }
-    // Root endpoint - GET /api/root (since /api/ is not accessible with catch-all)
+    // Root endpoint
     if (route === '/' && method === 'GET') {
       return handleCORS(NextResponse.json({ message: "Hello World" }))
     }
 
     // Auth endpoints
-    // GET /api/auth/users - Get all users (for role switching in demo)
     if (route === '/auth/users' && method === 'GET') {
       return handleCORS(NextResponse.json(Object.values(mockUsers)))
     }
 
-    // GET /api/auth/user/:id - Get specific user
     if (route.startsWith('/auth/user/') && method === 'GET') {
       const userId = route.split('/')[3]
       const user = mockUsers[userId]
@@ -126,6 +290,187 @@ async function handleRoute(request, { params }) {
       }
       return handleCORS(NextResponse.json(user))
     }
+
+    // ===== HERO PLAN FEATURES =====
+
+    // Advanced AI Review - POST /api/hero/advanced-review
+    if (route === '/hero/advanced-review' && method === 'POST') {
+      const body = await request.json()
+      const { sessionId, userId } = body
+
+      // Check user has Hero plan
+      const user = mockUsers[userId]
+      if (!user || user.planType !== 'hero') {
+        return handleCORS(NextResponse.json(
+          { error: "Advanced review requires Hero Plan" }, 
+          { status: 403 }
+        ))
+      }
+
+      // Get session data
+      const session = await db.collection('accommodation_sessions').findOne({ id: sessionId })
+      if (!session) {
+        return handleCORS(NextResponse.json({ error: "Session not found" }, { status: 404 }))
+      }
+
+      try {
+        // Generate advanced AI review
+        const advancedReview = await generateAdvancedReview(session)
+        
+        // Perform legal risk analysis
+        const legalAnalysis = legalRiskAnalyzer.assessRisks(session)
+        
+        // Save advanced review to database
+        const reviewRecord = {
+          id: uuidv4(),
+          sessionId,
+          userId,
+          advancedReview,
+          legalAnalysis,
+          reviewType: 'hero_advanced',
+          timestamp: new Date()
+        }
+
+        await db.collection('advanced_reviews').insertOne(reviewRecord)
+
+        return handleCORS(NextResponse.json({
+          reviewId: reviewRecord.id,
+          ...advancedReview,
+          legalAnalysis
+        }))
+
+      } catch (error) {
+        console.error('Advanced Review Error:', error)
+        return handleCORS(NextResponse.json(
+          { error: "Failed to generate advanced review" }, 
+          { status: 500 }
+        ))
+      }
+    }
+
+    // Advocate Recommendations - GET /api/hero/advocate-recommendations/:userId
+    if (route.startsWith('/hero/advocate-recommendations/') && method === 'GET') {
+      const userId = route.split('/')[3]
+      const user = mockUsers[userId]
+      
+      if (!user || user.planType !== 'hero') {
+        return handleCORS(NextResponse.json(
+          { error: "Advocate recommendations require Hero Plan" }, 
+          { status: 403 }
+        ))
+      }
+
+      // Get available advocates (prioritized for Hero users)
+      const advocates = Object.values(mockUsers)
+        .filter(u => u.role === 'advocate')
+        .map(advocate => ({
+          ...advocate,
+          isPriority: user.assignedAdvocate === advocate.id,
+          matchScore: calculateAdvocateMatch(user, advocate)
+        }))
+        .sort((a, b) => {
+          if (a.isPriority) return -1
+          if (b.isPriority) return 1
+          return b.matchScore - a.matchScore
+        })
+
+      return handleCORS(NextResponse.json(advocates))
+    }
+
+    // Document Vault - GET /api/hero/vault/:userId
+    if (route.startsWith('/hero/vault/') && method === 'GET') {
+      const userId = route.split('/')[3]
+      const user = mockUsers[userId]
+      
+      if (!user || user.planType !== 'hero') {
+        return handleCORS(NextResponse.json(
+          { error: "Document vault requires Hero Plan" }, 
+          { status: 403 }
+        ))
+      }
+
+      // Get user's stored documents
+      const documents = await db.collection('document_vault')
+        .find({ userId })
+        .sort({ timestamp: -1 })
+        .toArray()
+
+      const cleanedDocs = documents.map(({ _id, ...doc }) => doc)
+      return handleCORS(NextResponse.json(cleanedDocs))
+    }
+
+    // Generate IEP Template - POST /api/hero/generate-template
+    if (route === '/hero/generate-template' && method === 'POST') {
+      const body = await request.json()
+      const { sessionId, userId, templateType = 'full_iep' } = body
+
+      const user = mockUsers[userId]
+      if (!user || user.planType !== 'hero') {
+        return handleCORS(NextResponse.json(
+          { error: "IEP templates require Hero Plan" }, 
+          { status: 403 }
+        ))
+      }
+
+      // Get session data
+      const session = await db.collection('accommodation_sessions').findOne({ id: sessionId })
+      if (!session) {
+        return handleCORS(NextResponse.json({ error: "Session not found" }, { status: 404 }))
+      }
+
+      // Generate IEP template
+      const template = await generateIEPTemplate(session, templateType)
+      
+      // Save to vault
+      const vaultDoc = {
+        id: uuidv4(),
+        userId,
+        sessionId,
+        documentType: templateType,
+        title: `IEP Template - ${session.childName}`,
+        template,
+        timestamp: new Date()
+      }
+
+      await db.collection('document_vault').insertOne(vaultDoc)
+
+      return handleCORS(NextResponse.json(template))
+    }
+
+    // Team Collaboration - POST /api/hero/invite-team
+    if (route === '/hero/invite-team' && method === 'POST') {
+      const body = await request.json()
+      const { sessionId, userId, inviteEmail, role = 'viewer' } = body
+
+      const user = mockUsers[userId]
+      if (!user || user.planType !== 'hero') {
+        return handleCORS(NextResponse.json(
+          { error: "Team collaboration requires Hero Plan" }, 
+          { status: 403 }
+        ))
+      }
+
+      // Create team invitation
+      const invitation = {
+        id: uuidv4(),
+        sessionId,
+        invitedBy: userId,
+        inviteEmail,
+        role, // viewer, commenter, editor
+        status: 'pending',
+        timestamp: new Date(),
+        expires: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000) // 7 days
+      }
+
+      await db.collection('team_invitations').insertOne(invitation)
+
+      return handleCORS(NextResponse.json({ 
+        message: "Team member invited successfully",
+        invitationId: invitation.id 
+      }))
+    }
+
+    // ===== EXISTING FUNCTIONALITY =====
 
     // Generate Accommodations - POST /api/accommodations/generate
     if (route === '/accommodations/generate' && method === 'POST') {
@@ -140,10 +485,9 @@ async function handleRoute(request, { params }) {
         additionalInfo,
         planType = 'free',
         userId,
-        selectedParentId // For advocates working on behalf of parents
+        selectedParentId
       } = body
 
-      // Validate required fields
       if (!childName || !gradeLevel || !diagnosisAreas?.length || !communicationMethod) {
         return handleCORS(NextResponse.json(
           { error: "Missing required fields" }, 
@@ -151,11 +495,9 @@ async function handleRoute(request, { params }) {
         ))
       }
 
-      // Determine the actual user and plan type
       let actualUser = mockUsers[userId] || mockUsers['parent_sarah']
       let actualPlanType = planType
 
-      // If advocate is generating for a parent
       if (selectedParentId && actualUser.role === 'advocate') {
         const parentUser = mockUsers[selectedParentId]
         if (parentUser) {
@@ -163,8 +505,9 @@ async function handleRoute(request, { params }) {
         }
       }
 
-      // Create prompt for OpenAI
+      // Enhanced prompt for Hero users
       const accommodationCount = actualPlanType === 'hero' ? 15 : 8
+      const modelToUse = actualPlanType === 'hero' ? "gpt-4o" : "gpt-4o"
       
       const prompt = `You are an expert IEP accommodation specialist. Create ${accommodationCount} personalized, specific, and implementable IEP accommodations for a child with the following profile:
 
@@ -175,6 +518,8 @@ Sensory Preferences: ${sensoryPreferences.join(', ')}
 Behavioral Challenges: ${behavioralChallenges.join(', ')}
 Communication Method: ${communicationMethod}
 Additional Information: ${additionalInfo}
+
+${actualPlanType === 'hero' ? 'HERO PLAN: Provide enhanced, detailed accommodations with legal compliance considerations and implementation timelines.' : ''}
 
 Generate accommodations that are:
 1. Specific and actionable for teachers
@@ -195,16 +540,17 @@ Return the accommodations in this exact JSON format:
   ]
 }
 
-Focus on practical accommodations that address the specific challenges mentioned. Include accommodations for sensory needs, communication support, behavioral management, and academic access as relevant to this child's profile.`
+Focus on practical accommodations that address the specific challenges mentioned.`
 
       try {
-        // Call OpenAI API
         const completion = await openai.chat.completions.create({
-          model: "gpt-4o",
+          model: modelToUse,
           messages: [
             {
               role: "system",
-              content: "You are an expert IEP accommodation specialist with deep knowledge of autism support strategies, special education law, and evidence-based practices. Always respond with valid JSON only."
+              content: actualPlanType === 'hero' 
+                ? "You are an expert IEP accommodation specialist with deep knowledge of autism support strategies, special education law, and evidence-based practices. For Hero Plan users, provide enhanced detail, legal compliance notes, and comprehensive implementation guidance. Always respond with valid JSON only."
+                : "You are an expert IEP accommodation specialist with deep knowledge of autism support strategies, special education law, and evidence-based practices. Always respond with valid JSON only."
             },
             {
               role: "user",
@@ -212,17 +558,15 @@ Focus on practical accommodations that address the specific challenges mentioned
             }
           ],
           temperature: 0.7,
-          max_tokens: 2500
+          max_tokens: actualPlanType === 'hero' ? 3500 : 2500
         })
 
         const response = completion.choices[0].message.content
         let accommodationsData
 
         try {
-          // Clean the response to handle potential formatting issues
           let cleanedResponse = response.trim()
           
-          // Remove any markdown code block formatting if present
           if (cleanedResponse.startsWith('```json')) {
             cleanedResponse = cleanedResponse.replace(/^```json\s*/, '').replace(/\s*```$/, '')
           } else if (cleanedResponse.startsWith('```')) {
@@ -232,11 +576,9 @@ Focus on practical accommodations that address the specific challenges mentioned
           accommodationsData = JSON.parse(cleanedResponse)
         } catch (parseError) {
           console.error('Failed to parse OpenAI response:', parseError)
-          console.error('Raw response:', response)
           throw new Error('Invalid response format from AI')
         }
 
-        // Save to database as accommodation session
         const sessionId = uuidv4()
         const accommodationSession = {
           id: sessionId,
@@ -249,13 +591,11 @@ Focus on practical accommodations that address the specific challenges mentioned
           additionalInfo,
           planType: actualPlanType,
           accommodations: accommodationsData.accommodations,
-          // Collaboration fields
           createdBy: userId,
-          forParent: selectedParentId || userId, // Which parent this is for
-          status: 'draft', // draft, reviewed, approved
+          forParent: selectedParentId || userId,
+          status: 'draft',
           lastModified: new Date(),
           timestamp: new Date(),
-          // Approval tracking
           approvals: {
             accommodationsApproved: false,
             approvedBy: null,
@@ -269,7 +609,8 @@ Focus on practical accommodations that address the specific challenges mentioned
           sessionId,
           ...accommodationsData,
           createdBy: actualUser.name,
-          createdByRole: actualUser.role
+          createdByRole: actualUser.role,
+          planType: actualPlanType
         }))
 
       } catch (openaiError) {
@@ -281,7 +622,7 @@ Focus on practical accommodations that address the specific challenges mentioned
       }
     }
 
-    // Get Sessions - GET /api/sessions/:userId
+    // Get Sessions
     if (route.startsWith('/sessions/') && method === 'GET') {
       const userId = route.split('/')[2]
       const user = mockUsers[userId]
@@ -293,10 +634,8 @@ Focus on practical accommodations that address the specific challenges mentioned
       let query = {}
       
       if (user.role === 'parent') {
-        // Parents see sessions created for them
         query = { forParent: userId }
       } else if (user.role === 'advocate') {
-        // Advocates see sessions for all their assigned parents
         query = { forParent: { $in: user.assignedParents } }
       }
 
@@ -306,7 +645,6 @@ Focus on practical accommodations that address the specific challenges mentioned
         .limit(50)
         .toArray()
 
-      // Remove MongoDB's _id field and add user names
       const enrichedSessions = sessions.map(({ _id, ...session }) => {
         const createdByUser = Object.values(mockUsers).find(u => u.id === session.createdBy)
         const forParentUser = mockUsers[session.forParent]
@@ -321,7 +659,7 @@ Focus on practical accommodations that address the specific challenges mentioned
       return handleCORS(NextResponse.json(enrichedSessions))
     }
 
-    // Get Single Session - GET /api/session/:sessionId
+    // Get Single Session
     if (route.startsWith('/session/') && method === 'GET') {
       const sessionId = route.split('/')[2]
       
@@ -332,13 +670,11 @@ Focus on practical accommodations that address the specific challenges mentioned
         return handleCORS(NextResponse.json({ error: "Session not found" }, { status: 404 }))
       }
 
-      // Get comments for this session
       const comments = await db.collection('session_comments')
         .find({ sessionId })
         .sort({ timestamp: 1 })
         .toArray()
 
-      // Enrich comments with user names
       const enrichedComments = comments.map(({ _id, ...comment }) => {
         const user = Object.values(mockUsers).find(u => u.id === comment.userId)
         return {
@@ -348,7 +684,6 @@ Focus on practical accommodations that address the specific challenges mentioned
         }
       })
 
-      // Remove MongoDB _id and enrich session
       const { _id, ...cleanSession } = session
       const createdByUser = Object.values(mockUsers).find(u => u.id === session.createdBy)
       const forParentUser = mockUsers[session.forParent]
@@ -361,7 +696,7 @@ Focus on practical accommodations that address the specific challenges mentioned
       }))
     }
 
-    // Add Comment - POST /api/session/:sessionId/comments
+    // Add Comment
     if (route.match(/^\/session\/[^\/]+\/comments$/) && method === 'POST') {
       const sessionId = route.split('/')[2]
       const body = await request.json()
@@ -379,13 +714,12 @@ Focus on practical accommodations that address the specific challenges mentioned
         sessionId,
         userId,
         text,
-        accommodationIndex: accommodationIndex || null, // null for general comments
+        accommodationIndex: accommodationIndex || null,
         timestamp: new Date()
       }
 
       await db.collection('session_comments').insertOne(comment)
 
-      // Get user info for response
       const user = Object.values(mockUsers).find(u => u.id === userId)
       
       return handleCORS(NextResponse.json({
@@ -395,7 +729,7 @@ Focus on practical accommodations that address the specific challenges mentioned
       }))
     }
 
-    // Update Approval - PUT /api/session/:sessionId/approval
+    // Update Approval
     if (route.match(/^\/session\/[^\/]+\/approval$/) && method === 'PUT') {
       const sessionId = route.split('/')[2]
       const body = await request.json()
@@ -424,40 +758,6 @@ Focus on practical accommodations that address the specific challenges mentioned
       return handleCORS(NextResponse.json({ success: true, approved, section }))
     }
 
-    // Status endpoints - POST /api/status
-    if (route === '/status' && method === 'POST') {
-      const body = await request.json()
-      
-      if (!body.client_name) {
-        return handleCORS(NextResponse.json(
-          { error: "client_name is required" }, 
-          { status: 400 }
-        ))
-      }
-
-      const statusObj = {
-        id: uuidv4(),
-        client_name: body.client_name,
-        timestamp: new Date()
-      }
-
-      await db.collection('status_checks').insertOne(statusObj)
-      return handleCORS(NextResponse.json(statusObj))
-    }
-
-    // Status endpoints - GET /api/status
-    if (route === '/status' && method === 'GET') {
-      const statusChecks = await db.collection('status_checks')
-        .find({})
-        .limit(1000)
-        .toArray()
-
-      // Remove MongoDB's _id field from response
-      const cleanedStatusChecks = statusChecks.map(({ _id, ...rest }) => rest)
-      
-      return handleCORS(NextResponse.json(cleanedStatusChecks))
-    }
-
     // Route not found
     return handleCORS(NextResponse.json(
       { error: `Route ${route} not found` }, 
@@ -471,6 +771,70 @@ Focus on practical accommodations that address the specific challenges mentioned
       { status: 500 }
     ))
   }
+}
+
+// Helper Functions
+function calculateAdvocateMatch(parent, advocate) {
+  let score = 0
+  
+  // Experience bonus
+  const experience = parseInt(advocate.experience?.split(' ')[0] || '0')
+  score += Math.min(experience * 2, 20)
+  
+  // Rating bonus
+  score += (advocate.rating || 4) * 10
+  
+  // Availability bonus
+  if (advocate.availability === 'high') score += 15
+  if (advocate.availability === 'medium') score += 10
+  
+  // Specialization match
+  if (parent.children?.some(child => advocate.specialization?.includes('Autism'))) {
+    score += 25
+  }
+  
+  return Math.min(score, 100)
+}
+
+async function generateIEPTemplate(session, templateType) {
+  const template = {
+    id: uuidv4(),
+    type: templateType,
+    childInfo: {
+      name: session.childName,
+      grade: session.gradeLevel,
+      diagnosis: session.diagnosisAreas,
+      dateGenerated: new Date().toISOString().split('T')[0]
+    },
+    sections: {
+      presentLevels: `${session.childName} is a ${session.gradeLevel} student diagnosed with ${session.diagnosisAreas.join(', ')}. Current performance levels and needs are documented based on recent assessments.`,
+      goals: session.accommodations.slice(0, 5).map((acc, i) => ({
+        id: i + 1,
+        area: acc.category,
+        goal: `By [DATE], when given ${acc.implementation}, ${session.childName} will ${acc.description} with 80% accuracy across 4 out of 5 consecutive trials.`,
+        measurable: true
+      })),
+      accommodations: session.accommodations,
+      services: [
+        {
+          service: 'Special Education',
+          frequency: '5 times per week',
+          duration: '60 minutes',
+          location: 'Special Education Classroom'
+        },
+        {
+          service: 'Speech/Language Therapy',
+          frequency: '2 times per week', 
+          duration: '30 minutes',
+          location: 'Speech Room'
+        }
+      ]
+    },
+    generatedBy: 'My IEP Hero - Hero Plan',
+    timestamp: new Date()
+  }
+  
+  return template
 }
 
 // Export all HTTP methods
