@@ -29,7 +29,9 @@ const MainApp = () => {
   const [comments, setComments] = useState([])
   const [newComment, setNewComment] = useState('')
   const [assignedParents, setAssignedParents] = useState([]) // For advocates
+  const [selectedStudent, setSelectedStudent] = useState(null) // New: selected student
   const [formData, setFormData] = useState({
+    studentId: null,
     childName: '',
     gradeLevel: '',
     diagnosisAreas: [],
