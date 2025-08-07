@@ -1,7 +1,6 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { useAuth } from '@/components/AuthComponents'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -14,12 +13,44 @@ import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Plus, User, Calendar, GraduationCap, Brain, Users, ArrowRight, AlertCircle, BookOpen } from 'lucide-react'
 import { toast } from 'sonner'
 
+// Mock authentication hook for development
+const useMockAuth = () => {
+  const [mockUser, setMockUser] = useState({
+    id: 'parent_sarah',
+    access_token: 'mock_token_12345'
+  })
+  const [mockProfile, setMockProfile] = useState({
+    id: 'parent_sarah',
+    first_name: 'Sarah',
+    last_name: 'Johnson', 
+    email: 'sarah.johnson@example.com',
+    role: 'parent',
+    plan_type: 'free'
+  })
+  
+  return { user: mockUser, profile: mockProfile }
+}
+
 export const StudentSelector = ({ 
   selectedStudent, 
   onStudentSelect, 
-  onStudentCreated 
+  onStudentCreated,
+  currentUser // Accept current user from parent
 }) => {
-  const { user, profile } = useAuth()
+  const { user, profile } = currentUser ? 
+    // If passed from parent component, use that
+    { 
+      user: { id: currentUser.id, access_token: 'mock_token' }, 
+      profile: { 
+        ...currentUser, 
+        role: currentUser.role, 
+        plan_type: currentUser.planType, 
+        first_name: currentUser.name?.split(' ')[0] || 'User', 
+        last_name: currentUser.name?.split(' ')[1] || '' 
+      } 
+    } :
+    // Otherwise use mock auth
+    useMockAuth()
   const [students, setStudents] = useState([])
   const [loading, setLoading] = useState(true)
   const [showCreateForm, setShowCreateForm] = useState(false)
