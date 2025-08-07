@@ -105,11 +105,16 @@ CREATE TABLE children_profiles (
   created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
--- 8. Accommodation Sessions (updated to work with Supabase)
+-- 8. Accommodation Sessions (updated to reference students)
 CREATE TABLE accommodation_sessions (
   id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
-  child_name TEXT NOT NULL,
-  grade_level TEXT NOT NULL,
+  
+  -- Student reference (replaces individual child fields)
+  student_id UUID REFERENCES students(id) NOT NULL,
+  child_name TEXT NOT NULL, -- kept for backward compatibility
+  grade_level TEXT NOT NULL, -- kept for backward compatibility
+  
+  -- Session data
   diagnosis_areas TEXT[] DEFAULT '{}',
   sensory_preferences TEXT[] DEFAULT '{}',
   behavioral_challenges TEXT[] DEFAULT '{}',
