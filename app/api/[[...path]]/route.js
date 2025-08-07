@@ -658,6 +658,86 @@ Format the response as a clear, organized profile that can be shared with teache
 
         const generatedProfile = completion.choices[0].message.content
 
+        // Hero Plan: Generate additional insights and recommendations
+        let profileInsights = null
+        let helpfulSupports = []
+        let situationsToAvoid = []
+        let classroomTips = []
+
+        if (profileType === 'hero') {
+          try {
+            const insightsPrompt = `Based on this autism profile, provide specific insights and actionable recommendations in JSON format:
+
+PROFILE:
+${generatedProfile}
+
+STUDENT DATA:
+- Sensory needs: ${sensoryPreferences.selected?.join(', ') || 'Not specified'}
+- Communication: ${communicationStyle.primary_method || 'Not specified'}
+- Behavioral triggers: ${behavioralTriggers.triggers?.join(', ') || 'Not specified'}
+- Home supports: ${homeSupports || 'Not specified'}
+- Goals: ${goals || 'Not specified'}
+
+Respond with ONLY valid JSON in this exact format:
+{
+  "topNeeds": ["need1", "need2", "need3"],
+  "topRecommendations": ["rec1", "rec2", "rec3"],
+  "redFlags": ["flag1", "flag2", "flag3"],
+  "helpfulSupports": ["support1", "support2", "support3", "support4"],
+  "situationsToAvoid": ["situation1", "situation2", "situation3", "situation4"],
+  "classroomTips": ["tip1", "tip2", "tip3", "tip4"]
+}`
+
+            const insightsCompletion = await openai.chat.completions.create({
+              model: "gpt-4o",
+              messages: [
+                {
+                  role: "system",
+                  content: "You are an expert autism specialist. Generate specific, actionable insights in valid JSON format only. No explanations or additional text."
+                },
+                {
+                  role: "user",
+                  content: insightsPrompt
+                }
+              ],
+              temperature: 0.3,
+              max_tokens: 1000
+            })
+
+            const insightsResponse = insightsCompletion.choices[0].message.content
+            let cleanedInsights = insightsResponse.trim()
+            
+            // Clean JSON response
+            if (cleanedInsights.startsWith('```json')) {
+              cleanedInsights = cleanedInsights.replace(/^```json\s*/, '').replace(/\s*```$/, '')
+            } else if (cleanedInsights.startsWith('```')) {
+              cleanedInsights = cleanedInsights.replace(/^```\s*/, '').replace(/\s*```$/, '')
+            }
+
+            const insights = JSON.parse(cleanedInsights)
+            profileInsights = {
+              topNeeds: insights.topNeeds || [],
+              topRecommendations: insights.topRecommendations || [],
+              redFlags: insights.redFlags || []
+            }
+            helpfulSupports = insights.helpfulSupports || []
+            situationsToAvoid = insights.situationsToAvoid || []
+            classroomTips = insights.classroomTips || []
+
+          } catch (insightsError) {
+            console.error('Failed to generate insights:', insightsError)
+            // Provide fallback insights if AI generation fails
+            profileInsights = {
+              topNeeds: ["Visual supports", "Structured routines", "Sensory regulation"],
+              topRecommendations: ["Clear visual schedules", "Quiet workspace option", "Movement breaks"],
+              redFlags: ["Loud, chaotic environments", "Sudden changes", "Overwhelming social demands"]
+            }
+            helpfulSupports = ["Visual schedules", "Calm down space", "Clear expectations", "Positive reinforcement"]
+            situationsToAvoid = ["Unexpected changes", "Loud noises", "Crowded spaces", "Rushed transitions"]
+            classroomTips = ["Provide advance notice", "Use visual cues", "Allow processing time", "Celebrate successes"]
+          }
+        }
+
         // Save to database
         const { data: autismProfile, error: saveError } = await supabase
           .from('autism_profiles')
