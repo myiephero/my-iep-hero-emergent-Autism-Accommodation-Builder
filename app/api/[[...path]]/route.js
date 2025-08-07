@@ -512,7 +512,336 @@ async function handleRoute(request, { params }) {
       }))
     }
 
-    // ===== STUDENT MANAGEMENT =====
+    // ===== AUTISM PROFILE GENERATOR =====
+
+    // Generate Autism Profile - POST /api/autism-profiles/generate
+    if (route === '/autism-profiles/generate' && method === 'POST') {
+      const { user, profile, error } = await withAuth(request)
+      if (error) {
+        return handleCORS(NextResponse.json({ error }, { status: 401 }))
+      }
+
+      const body = await request.json()
+      const {
+        studentId,
+        sensoryPreferences,
+        communicationStyle,
+        behavioralTriggers,
+        homeSupports,
+        goals
+      } = body
+
+      if (!studentId) {
+        return handleCORS(NextResponse.json({ error: "Student ID is required" }, { status: 400 }))
+      }
+
+      try {
+        // Verify access to this student
+        let hasAccess = false
+        let studentData = null
+
+        const { data: student, error: studentError } = await supabase
+          .from('students')
+          .select('*')
+          .eq('id', studentId)
+          .single()
+
+        if (studentError || !student) {
+          return handleCORS(NextResponse.json({ error: "Student not found" }, { status: 404 }))
+        }
+
+        studentData = student
+
+        if (profile.role === 'parent' && student.parent_id === user.id) {
+          hasAccess = true
+        } else if (profile.role === 'advocate') {
+          const { data: assignment } = await supabase
+            .from('student_advocate_assignments')
+            .select('id')
+            .eq('student_id', studentId)
+            .eq('advocate_id', user.id)
+            .eq('is_active', true)
+            .single()
+          hasAccess = !!assignment
+        }
+
+        if (!hasAccess) {
+          return handleCORS(NextResponse.json({ error: "Access denied to this student" }, { status: 403 }))
+        }
+
+        // Determine profile type based on user plan
+        let profileType = 'standard'
+        if (profile.role === 'advocate' || profile.plan_type === 'hero') {
+          profileType = 'hero'
+        }
+
+        // Create comprehensive prompt for AI generation
+        const prompt = `You are an expert autism specialist and special education advocate. Create a comprehensive, professional autism profile for educators based on the following information:
+
+STUDENT INFORMATION:
+Name: ${student.name}
+Grade Level: ${student.grade_level}
+Known Diagnoses: ${student.diagnosis_areas?.join(', ') || 'Not specified'}
+
+SENSORY PREFERENCES:
+Selected preferences: ${sensoryPreferences.selected?.join(', ') || 'None specified'}
+What calms them: ${sensoryPreferences.calming_strategies || 'Not specified'}
+
+COMMUNICATION STYLE:
+Primary method: ${communicationStyle.primary_method || 'Not specified'}
+Effective strategies: ${communicationStyle.effective_strategies || 'Not specified'}
+
+BEHAVIORAL TRIGGERS:
+Known triggers: ${behavioralTriggers.triggers?.join(', ') || 'None specified'}
+Other situations: ${behavioralTriggers.other_triggers || 'Not specified'}
+
+HOME SUPPORTS THAT WORK:
+${homeSupports || 'No specific supports documented'}
+
+GOALS FOR THIS YEAR:
+${goals || 'No specific goals documented'}
+
+Create a professional autism profile that includes:
+
+1. STUDENT OVERVIEW (2-3 sentences summarizing the student's strengths and needs)
+
+2. SENSORY CONSIDERATIONS (Specific sensory needs and recommended accommodations)
+
+3. COMMUNICATION APPROACH (How the student communicates best and recommended strategies)
+
+4. BEHAVIORAL SUPPORTS (Triggers to avoid and positive behavioral strategies)
+
+5. RECOMMENDED CLASSROOM ACCOMMODATIONS (Specific, actionable accommodations for teachers)
+
+6. GOALS AND PRIORITIES (Key areas of focus for educational support)
+
+${profileType === 'hero' ? 'ENHANCED PROFILE: Provide detailed implementation strategies, legal compliance notes, and comprehensive accommodation recommendations.' : ''}
+
+Write in a professional, strengths-based tone that emphasizes the student's abilities while clearly outlining support needs. Use person-first language and focus on practical, implementable strategies for educators.
+
+Format the response as a clear, organized profile that can be shared with teachers and support staff.`
+
+        const completion = await openai.chat.completions.create({
+          model: "gpt-4o",
+          messages: [
+            {
+              role: "system",
+              content: "You are an expert autism specialist and special education advocate with deep knowledge of IDEA law, evidence-based practices, and strengths-based approaches to autism support. Create comprehensive, professional autism profiles for educational teams."
+            },
+            {
+              role: "user", 
+              content: prompt
+            }
+          ],
+          temperature: 0.7,
+          max_tokens: profileType === 'hero' ? 2500 : 1500
+        })
+
+        const generatedProfile = completion.choices[0].message.content
+
+        // Save to database
+        const { data: autismProfile, error: saveError } = await supabase
+          .from('autism_profiles')
+          .insert([{
+            user_id: user.id,
+            student_id: studentId,
+            sensory_preferences: sensoryPreferences,
+            communication_style: communicationStyle,
+            behavioral_triggers: behavioralTriggers,
+            home_supports: homeSupports,
+            goals: goals,
+            generated_profile: generatedProfile,
+            profile_type: profileType
+          }])
+          .select()
+          .single()
+
+        if (saveError) throw saveError
+
+        // Log profile generation
+        await logUserEvent(user.id, 'autism_profile_generated', {
+          studentId,
+          studentName: student.name,
+          profileType,
+          profileLength: generatedProfile.length
+        })
+
+        return handleCORS(NextResponse.json({
+          profileId: autismProfile.id,
+          generatedProfile,
+          profileType,
+          studentName: student.name,
+          createdBy: profile.first_name + ' ' + profile.last_name
+        }))
+
+      } catch (error) {
+        console.error('Autism Profile Generation Error:', error)
+        return handleCORS(NextResponse.json({ error: "Failed to generate autism profile" }, { status: 500 }))
+      }
+    }
+
+    // Get Autism Profiles - GET /api/autism-profiles
+    if (route === '/autism-profiles' && method === 'GET') {
+      const { user, profile, error } = await withAuth(request)
+      if (error) {
+        return handleCORS(NextResponse.json({ error }, { status: 401 }))
+      }
+
+      try {
+        let query = supabase
+          .from('autism_profiles')
+          .select(`
+            id,
+            student_id,
+            generated_profile,
+            profile_type,
+            is_shared,
+            created_at,
+            students (
+              id,
+              name,
+              grade_level,
+              parent_id
+            )
+          `)
+
+        // Apply role-based filtering
+        if (profile.role === 'parent') {
+          query = query.eq('user_id', user.id)
+        } else if (profile.role === 'advocate') {
+          // Advocates see profiles for assigned students
+          query = query.in('student_id', 
+            // This would need a subquery - for now let's get all and filter
+          )
+        }
+
+        const { data, error: fetchError } = await query
+          .order('created_at', { ascending: false })
+          .limit(50)
+
+        if (fetchError) throw fetchError
+
+        // For advocates, filter by assigned students
+        let filteredData = data || []
+        if (profile.role === 'advocate') {
+          const { data: assignments } = await supabase
+            .from('student_advocate_assignments')
+            .select('student_id')
+            .eq('advocate_id', user.id)
+            .eq('is_active', true)
+
+          const assignedStudentIds = assignments?.map(a => a.student_id) || []
+          filteredData = filteredData.filter(profile => 
+            assignedStudentIds.includes(profile.student_id)
+          )
+        }
+
+        return handleCORS(NextResponse.json({ profiles: filteredData }))
+
+      } catch (error) {
+        console.error('Failed to fetch autism profiles:', error)
+        return handleCORS(NextResponse.json({ error: 'Failed to fetch profiles' }, { status: 500 }))
+      }
+    }
+
+    // Get Single Autism Profile - GET /api/autism-profiles/:profileId
+    if (route.startsWith('/autism-profiles/') && route.split('/').length === 3 && method === 'GET') {
+      const { user, profile, error } = await withAuth(request)
+      if (error) {
+        return handleCORS(NextResponse.json({ error }, { status: 401 }))
+      }
+
+      const profileId = route.split('/')[2]
+
+      try {
+        const { data: autismProfile, error: fetchError } = await supabase
+          .from('autism_profiles')
+          .select(`
+            *,
+            students (
+              id,
+              name,
+              grade_level,
+              parent_id
+            )
+          `)
+          .eq('id', profileId)
+          .single()
+
+        if (fetchError || !autismProfile) {
+          return handleCORS(NextResponse.json({ error: "Profile not found" }, { status: 404 }))
+        }
+
+        // Verify access
+        let hasAccess = false
+        if (profile.role === 'parent' && autismProfile.user_id === user.id) {
+          hasAccess = true
+        } else if (profile.role === 'advocate') {
+          const { data: assignment } = await supabase
+            .from('student_advocate_assignments')
+            .select('id')
+            .eq('student_id', autismProfile.student_id)
+            .eq('advocate_id', user.id)
+            .eq('is_active', true)
+            .single()
+          hasAccess = !!assignment
+        }
+
+        if (!hasAccess) {
+          return handleCORS(NextResponse.json({ error: "Access denied" }, { status: 403 }))
+        }
+
+        return handleCORS(NextResponse.json(autismProfile))
+
+      } catch (error) {
+        console.error('Failed to fetch autism profile:', error)
+        return handleCORS(NextResponse.json({ error: 'Failed to fetch profile' }, { status: 500 }))
+      }
+    }
+
+    // Share Autism Profile - POST /api/autism-profiles/:profileId/share
+    if (route.match(/^\/autism-profiles\/[^\/]+\/share$/) && method === 'POST') {
+      const { user, profile, error } = await withAuth(request)
+      if (error) {
+        return handleCORS(NextResponse.json({ error }, { status: 401 }))
+      }
+
+      const profileId = route.split('/')[2]
+      const body = await request.json()
+      const { shareWithEmails } = body
+
+      try {
+        // Update profile sharing status
+        const { data, error: updateError } = await supabase
+          .from('autism_profiles')
+          .update({
+            is_shared: true,
+            shared_with: shareWithEmails || [],
+            updated_at: new Date().toISOString()
+          })
+          .eq('id', profileId)
+          .eq('user_id', user.id) // Ensure user owns this profile
+          .select()
+          .single()
+
+        if (updateError) throw updateError
+
+        // Log sharing event
+        await logUserEvent(user.id, 'autism_profile_shared', {
+          profileId,
+          sharedWith: shareWithEmails?.length || 0
+        })
+
+        return handleCORS(NextResponse.json({ 
+          success: true, 
+          message: 'Profile shared successfully' 
+        }))
+
+      } catch (error) {
+        console.error('Failed to share autism profile:', error)
+        return handleCORS(NextResponse.json({ error: 'Failed to share profile' }, { status: 500 }))
+      }
+    }
 
     // Get User's Students - GET /api/students
     if (route === '/students' && method === 'GET') {
